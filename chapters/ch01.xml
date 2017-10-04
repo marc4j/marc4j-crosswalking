@@ -1,0 +1,1033 @@
+<?xml version="1.0" encoding="utf-8"?>
+<chapter id="ch01">
+  <title>Reading Data</title>
+  <sect1>
+    <title>MARC Formats</title>
+    <para>MARC records consist of structure, markup and content. These components are specified in MARC formats<indexterm><primary>MARC</primary><secondary>formats</secondary></indexterm>. The first MARC format was developed by the Library of Congress in the sixties for the exchange of bibliographic data using half-inch magnetic tape. Work on the standard was directed towards the development of an international standard, but most countries have since developed national formats. To enable the exchange of bibliographic records between national agencies, the UNIMARC <indexterm><primary>UNIMARC</primary></indexterm> standard was developed. The first UNIMARC edition was published in 1977. Since 1997 the national formats used by the United States (USMARC)<indexterm><primary>USMARC</primary></indexterm>, Canada (CANMARC)<indexterm><primary>CANMARC</primary></indexterm> and the United Kingdom (UKMARC)<indexterm><primary>UKMARC</primary></indexterm> are merged into the MARC 21<indexterm><primary>MARC 21</primary></indexterm> standard.</para> 
+    <para>The structure of all MARC records is based on an exchange format for bibliographic records as specified in the ANSI/NISO Z39.2<indexterm><primary>Z39.2</primary></indexterm> and ISO 2709:1996<indexterm><primary>ISO 2709</primary></indexterm> standards. The markup and content is different for the different national formats and reflects the standards used related to cataloging like cataloging rules, classification scheme's and subject headings. Since all MARC formats use the same structure, MARC4J should have no problem reading them. The examples in this book are based on the MARC 21 format.</para>
+<para>The structure of a MARC<indexterm><primary>MARC</primary><secondary>record structure</secondary></indexterm> record is pretty straightforward, but it is not human-readable. It consists of a byte stream with four building blocks:</para>
+    <variablelist>
+      <varlistentry>
+	<term><emphasis>Leader</emphasis></term>
+	<listitem>
+	  <para>The leader<indexterm><primary>leader</primary></indexterm> is a fixed length field of 24 characters containing record processing information like the record length, the status of the record, the type of material being cataloged and the base address of data. The base address of data is the starting position for the variable fields.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Directory</emphasis></term>
+	<listitem>
+	  <para>The directory<indexterm><primary>directory</primary></indexterm> immediately follows the leader and provides an index to the fields. For each field the directory provides an entry containing the field identifier or tag (three digits), the field length (four digits) and the starting position (five digits). The directory is terminated by a field separator. The following example is a single directory entry:</para>
+	  <screen>
+245007800172
+	  </screen>
+	  <?hard-pagebreak?>  
+	  <para>In this example a variable field identified by tag 245 has a length of 78 characters and starts at character
+position 172 relative to the base address of data.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Variable Fields</emphasis></term>
+	<listitem>
+	  <para>The variable fields<indexterm><primary>variable fields</primary></indexterm> containing the actual record content follow after the directory. There are three kinds of variable fields:</para>
+	  <itemizedlist>
+	    <listitem>
+	      <para>control number field (a special control field identified by tag 001)</para>
+	    </listitem>
+	    <listitem>
+	      <para>control fields (identified by tags 002 through 009)</para>
+	    </listitem>
+	    <listitem>
+	      <para>data fields (identified by tags 010 through 999)</para>
+	    </listitem>
+	  </itemizedlist>
+	  <para>Each variable field is terminated by a field separator. The control number field should always be the first field. Control fields contain only data, but the structure of a data field is slightly more complex. A data field can contain indicators and subfields. Indicators are single character data elements that can contain additional data for a field. In MARC 21, for example, fields with title information use an indicator for the number of non-filing characters to enable a computer program to ignore articles. A subfield is identified by a single character, called a data element identifier or subfield code, preceded by a subfield delimiter.</para> 
+	  <para>The example which follows represents a data field for tag 245 (title statement). The dollar sign represents a subfield delimiter. The two digits following the tag are the indicator values. The first indicator indicates that a title added entry is to be generated from this field and the second indicator specifies the number of non-filing characters. This field has two subfields. Subfield <parameter>$a</parameter> contains the title proper and subfield <parameter>$c</parameter> the statement of responsibility.</para>
+	  <screen>
+245 10$aSummerland /$cMichael Chabon.
+	  </screen>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Record Terminator</emphasis></term>
+	<listitem>
+	  <para>The record terminator<indexterm><primary>record terminator</primary></indexterm> is the final character of the record.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>The MARC4J API<indexterm><primary>MARC4J</primary><secondary>and ISO 2709</secondary></indexterm> is not a full implementation of the ANSI/NISO Z39.2<indexterm><primary>Z39.2</primary><secondary>and MARC4J</secondary></indexterm> or ISO 2709:1996<indexterm><primary>ISO 2709</primary><secondary>and MARC4J</secondary></indexterm> standard. The standard is implemented as it is used in the different MARC formats. The MARC4J parser assumes that there are 2 indicators and that the subfield code length is 2. Subrecords are not supported.</para>
+    <para>The use of MARC4J<indexterm><primary>MARC4J</primary><secondary>and XML</secondary></indexterm> is not limited to records in ISO 2709 format. MARC4J can handle all kinds of bibliographic XML formats, like MODS and Dublin Core, through MARCXML that serves as an intermediary format. It is also possible to implement the interfaces used for reading and writing data to provide support for other bibliographic formats.</para>
+  </sect1>
+  <?hard-pagebreak?>
+  <sect1>
+    <title>Introducing MARC4J</title>
+    <para>For reading MARC data, MARC4J provides implementations of an interface called <classname>MarcReader</classname><indexterm><primary>MarcReader interface</primary></indexterm>. This interface has two methods that provide an iterator to read MARC data from an input source:</para>
+    <variablelist>
+      <varlistentry>
+	<term><methodname>hasNext()</methodname><indexterm><primary>hasNext() method</primary></indexterm></term>
+	<listitem>
+	  <para>Returns <varname>true</varname> if the iteration has more records, <varname>false</varname> otherwise.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>next()</methodname><indexterm><primary>next() method</primary></indexterm></term>
+	<listitem>
+	  <para>Returns the next record in the iteration as a <classname>Record</classname> object.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>If you are familiar with the Java Collections Framework<indexterm><primary>Java Collections Framework</primary></indexterm> you might have used iterators. When you have a <classname>List</classname> in Java, you can access the items on the list through an <classname>Iterator</classname> that can be obtained from the <classname>List</classname> object:</para>
+    <programlisting lang="Java">
+Iterator i = list.iterator();
+while (i.hasNext()) {
+    Object item = i.next();
+    // do something with the item object
+}	
+      </programlisting>
+      <tip>
+	<para>It is recommended to have the Java 2 Standard Edition (J2SE) documentation at hand when programming with MARC4J. MARC4J uses standard Java language features where possible, making it an easy API to work with for Java developers. The J2SE documentation is available on Sun's Developer Network (SDN) site.</para>
+      </tip>
+      <para>MARC4J provides two classes that implement <classname>MarcReader</classname>:</para>
+      <variablelist>
+	<varlistentry>
+	  <term><classname>MarcStreamReader</classname><indexterm><primary>MarcStreamReader class</primary></indexterm></term>
+	  <listitem>
+	    <para>An iterator over a collection of MARC records in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><classname>MarcXmlReader</classname><indexterm><primary>MarcXmlReader class</primary></indexterm></term>
+	  <listitem>
+	    <para>An iterator over a collection of MARC records in MARCXML format.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <para>Let's start with reading MARC records in ISO 2709 format. To do this you need to import three MARC4J classes:</para>
+    <programlisting lang="Java">
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.marc.Record;
+    </programlisting>
+    <para>The <classname>MarcReader</classname> interface and the <classname>MarcStreamReader</classname><indexterm><primary>MarcStreamReader class</primary></indexterm> class are required to read MARC data. The <classname>Record</classname><indexterm><primary>Record interface</primary></indexterm> interface provides an in-memory representation of a MARC record. To read MARC data you need an input stream to read records from, for example one that reads input from a local file:</para>
+    <programlisting lang="Java">
+InputStream in = new FileInputStream("summerland.mrc");
+    </programlisting>
+    <para>You can instantiate an <classname>InputStream</classname> using a <classname>File</classname> object:</para>
+    <programlisting>
+File file = new File("/Users/bpeters/Documents", "summerland.mrc");
+InputStream in = new FileInputStream(file);
+    </programlisting>
+    <para>Once you have an input stream, you can initialize the <classname>MarcReader</classname> implementation:</para>
+    <programlisting lang="Java">
+MarcReader reader = new MarcStreamReader(in);
+    </programlisting>
+    <para>It is possible to read directly from a URL using the <classname>java.net.URL</classname> class:</para>
+    <programlisting>
+URL url = new URL(
+  "http://www.loc.gov/standards/marcxml/Sandburg/sandburg.mrc");
+
+MarcReader reader = new MarcStreamReader(url.openStream());
+    </programlisting>
+    <para>After instantiating a <classname>MarcReader</classname> implementation, you can start reading records from the input stream:</para>
+    <programlisting lang="Java">
+while (reader.hasNext()) {
+    Record record = reader.next();
+
+}
+    </programlisting>
+    <para>If you want to examine the records, you can write each record to standard output using the <methodname>toString()</methodname><indexterm><primary>toString() method</primary></indexterm> method:</para>
+    <programlisting lang="Java">
+System.out.println(record.toString());
+    </programlisting>
+    <para><xref  linkend="first.example"/> shows the complete program. It reads records from a file <filename>summerland.mrc</filename> located in the current directory and writes each record to standard output using the <methodname>toString()</methodname> method.</para>
+    <example id="first.example">
+      <title>Reading MARC Data</title>
+      <programlisting lang="Java">
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.marc.Record;
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+public class ReadMarcExample {
+
+    public static void main(String args[]) throws Exception {
+
+	InputStream in = new FileInputStream("summerland.mrc");
+        MarcReader reader = new MarcStreamReader(in);
+        while (reader.hasNext()) {
+             Record record = reader.next();
+             System.out.println(record.toString());
+        }    
+
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>When you compile and run this program, it will write each record in tagged display format to standard output, like this:</para>
+    <screen>
+LEADER 00714cam a2200205 a 4500
+001 12883376
+005 20030616111422.0
+008 020805s2002    nyu    j      000 1 eng
+020   $a0786808772
+020   $a0786816155 (pbk.)
+040   $aDLC$cDLC$dDLC
+100 1 $aChabon, Michael.
+245 10$aSummerland /$cMichael Chabon.
+250   $a1st ed.
+260   $aNew York :$bMiramax Books/Hyperion Books for Children,$cc2002.
+300   $a500 p. ;$c22 cm.
+520   $aEthan Feld, the worst baseball player in the history of the game, 
+  finds himself recruited by a 100-year-old scout to help a band of 
+  fairies triumph over an ancient enemy.
+650  1$aFantasy.
+650  1$aBaseball$vFiction.
+650  1$aMagic$vFiction.
+    </screen>
+    <note>
+      <para>The record for <emphasis>Summerland</emphasis> by Michael Chabon is used as an example throughout this book. The cataloging agency is the Library of Congress.</para>
+    </note>
+    <para>When instantiating a <classname>MarcStreamReader</classname><indexterm><primary>MarcStreamReader class</primary><secondary>and character encoding</secondary></indexterm>, it is possible to add the character encoding as an argument. MARC4J<indexterm><primary>MARC4J</primary><secondary>and ISO 2709</secondary></indexterm> reads ISO 2709 records as binary data, but data elements in control fields and subfields are converted to <classname>String</classname> values. When Java decodes a byte array to a <classname>String</classname>, it needs a character encoding. The default encoding used by <classname>MarcStreamReader</classname> is ISO 8859-1 (Latin 1). Most character encodings used in MARC formats are 8-bits encodings, like ISO 8859-1, but encodings such as MARC-8 are not directly supported by Java. When parsing MARC 21 data, <classname>MarcStreamReader</classname> tries to detect the encoding from the character coding scheme in the leader (character position 9). If the value is 'a', UTF-8 is used, otherwise the reader uses the default encoding. You can always override the default encoding when instantiating a <classname>MarcStreamReader</classname> using a Java encoding name:</para>
+    <programlisting>
+// decode data elements as UTF-8
+MarcReader reader = new MarcStreamReader(in, "UTF8");
+
+// decode data elements as Latin-2
+MarcReader reader = new MarcStreamReader(in, "ISO8859_2");
+
+// decode data elements as KOI8-R, Russian
+MarcReader reader = new MarcStreamReader(in, "KOI8_R");
+    </programlisting>
+    <para>It is not required to read records from an input stream using a <methodname>while()</methodname> loop. If you know that your input data only contains a single record, you can simply read the record using the <methodname>next()</methodname><indexterm><primary>next() method</primary></indexterm> method<indexterm><primary>MarcStreamReader class</primary><secondary>reading single record</secondary></indexterm>:</para>
+    <programlisting>
+MarcReader reader = new MarcStreamReader(input);
+Record record = reader.next();
+System.out.println(record.toString());
+    </programlisting>
+    <para>You can check for a record using an if statement:</para>
+    <programlisting>
+MarcReader reader = new MarcStreamReader(input);
+
+if (reader.hasNext()) {
+    Record record = reader.next();
+    System.out.println(record.toString());
+} else {
+    System.err.println("Reader has no record.");
+}
+    </programlisting>
+    <para>This can be useful when a different class reads each single record as a byte stream. You can then create a <classname>ByteArrayInputStream</classname> using the constructor that takes a byte array as a parameter and use that to initialize the <classname>MarcReader</classname> implementation. Let's assume that we have a byte array <emphasis>bytes</emphasis> containing the byte stream for a single record in ISO 2709 format. The following listing shows how you can create a <classname>Record</classname> instance from this byte array:</para>
+    <programlisting>
+// we have a byte array called bytes
+InputStream in = new ByteArrayInputStream(bytes);
+
+MarcReader reader = new MarcStreamReader(in);
+if (reader.hasNext()) {
+    Record record = reader.next();
+    System.out.println(record.toString());
+} else {
+    System.err.println("Reader has no record.");
+}
+    </programlisting>
+    <para>When a <classname>MarcReader</classname> implementation encounters a parse error, a <classname>MarcException</classname> is thrown by the reader. This is an unchecked exception that you are not required to catch. If however you want to recover errors in your application, you can add exception handling by adding a try and catch block to your code:</para>
+    <programlisting>
+try {
+    MarcReader reader = new MarcStreamReader(input);
+    Record record = reader.next();
+    System.out.println(record.toString());
+} catch (MarcException e) {
+    System.err.println("exception thrown");
+}
+    </programlisting>
+  </sect1>
+  <sect1>
+    <title>The Record Object Model</title>
+    <para>The <classname>Record</classname> interface is the root of the record object model implemented by MARC4J. It provides access to the leader and variable fields. You can use it to read, add, move or remove data elements contained in the leader and variable fields. The record object model is implemented in the <classname>org.marc4j.marc</classname> package. The core interfaces are <classname>Record</classname>, <classname>Leader</classname>, <classname>VariableField</classname>, <classname>ControlField</classname>, <classname>DataField</classname> and <classname>Subfield</classname>. This section covers the most important interfaces and methods the record object model provides. Check <xref linkend="appendixa"/> for a complete overview.</para> 
+    <para>The following method returns the leader:</para>
+    <programlisting lang="Java">
+Leader leader = record.getLeader();
+    </programlisting>
+    <para>The <classname>Leader</classname><indexterm><primary>Leader interface</primary></indexterm> interface provides access to all the leader values. While the Leader represents mostly MARC structural information, some character positions provide useful bibliographic information. The method <methodname>getTypeOfRecord()</methodname><indexterm><primary>getTypeOfRecord() method</primary></indexterm>, for example, identifies the type of material being cataloged, such as language material, cartographic material, musical sound recording, or computer file.</para>
+    <para>There are several methods available to retrieve variable fields. The method <methodname>getVariableFields()</methodname><indexterm><primary>getVariableFields() method</primary></indexterm> returns all variable fields as a <classname>List</classname> object, but in most cases you will use methods that provide more control. The following method returns all control fields:</para>
+    <programlisting lang="Java">
+// returns fields for tags 001 through 009
+List fields = record.getControlFields();
+    </programlisting>
+    <para>And this method returns all data fields:</para>
+    <programlisting lang="Java">
+// returns fields for tags 010 through 999
+List fields = record.getDataFields();
+    </programlisting>
+    <para>Both <classname>ControlField</classname> and <classname>DataField</classname> are sub-interfaces of the <classname>VariableField</classname> interface that provides access to the tag through the <methodname>getTag()</methodname> method. For control fields MARC4J does not provide you with the level of detail you might expect. You can retrieve the data using the <methodname>getData()</methodname> mehod. To retrieve specific data elements at character positions, you need to use some standard Java. This is because MARC4J is designed to handle different MARC formats like MARC 21 and UNIMARC. To retrieve a data element in a control field, such as the language of the item, you can do something like this:</para>
+     <programlisting>
+// get control field with tag 008
+ControlField field = (ControlField) record.getVariableField("008");
+String data = field.getData();
+
+// the three-character MARC language code takes character positions 35-37
+String lang = data.substring(35,38);
+System.out.println("Language: " + lang);</programlisting>
+     <para>For the <emphasis>Summerland</emphasis> record used in <xref linkend="first.example"/>, this code would produce the following output: </para>
+     <programlisting>
+Language: eng  
+     </programlisting>
+     <?hard-pagebreak?>
+     <para>MARC4J provides two methods to read the control number. Use the method <methodname>getControlNumberField()</methodname><indexterm><primary>getControlNumbeField() method</primary></indexterm> to retrieve the <classname>ControlField</classname> instance for tag 001, or use <methodname>getControlNumber()</methodname><indexterm><primary>getControlNumber() method</primary></indexterm> to retrieve the control number as a <classname>String</classname> object.</para>
+     <para>The code listing that demonstrated how to retrieve the language also showed how you can retrieve variable fields for a given tag using the <methodname>getVariableField(String tag)</methodname> method. There are several methods to retrieve specific fields. Use <methodname>getVariableField(String tag)</methodname><indexterm><primary>getVariableField() method</primary></indexterm> to retrieve the first field occurrence for a given tag:</para>
+     <programlisting>
+DataField title = (DataField) record.getVariableField("245");
+     </programlisting>
+     <para>Use <methodname>getVariableFields(String tag)</methodname> to retrieve all occurrences:</para>
+     <programlisting>
+List subjects = record.getVariableFields("650");
+     </programlisting>
+     <para>You can add multiple tag values using a <classname>String</classname> array as an argument:</para>
+     <programlisting>
+String[] tags = {"010", "100", "245", "250", "260", "300"};
+List fields = record.getVariableFields(tags);
+     </programlisting>
+     <para>These methods return instances of <classname>VariableField</classname>, so if you need to access methods that are specific to the <classname>ControlField</classname> or <classname>DataField</classname> interface, you need to cast the instance of <classname>VariableField</classname> to the specific subclass:</para> 
+     <programlisting>
+// cast a variable field to a control field
+ControlField field = (ControlField) record.getVariableField("008");
+
+// cast a variable field to a data field
+DataField field = (DataField) record.getVariableField("245");
+     </programlisting>
+<para>Where the <classname>ControlField</classname><indexterm><primary>ControlField interface</primary></indexterm> interface requires only one method to retrieve the data element, the <classname>DataField</classname><indexterm><primary>DataField interface</primary></indexterm> interface is slightly more complex, since it has indicators and subfields. You can retrieve the indicators using the <methodname>getIndicator1()</methodname><indexterm><primary>getIndicator1() method</primary></indexterm> and <methodname>getIndicator2()</methodname><indexterm><primary>getIndicator2() method</primary></indexterm> methods. Subfields are represented by the <classname>Subfield</classname><indexterm><primary>Subfield interface</primary></indexterm> interface. The <classname>Subfield</classname> interface has a <methodname>getCode()</methodname><indexterm><primary>getCode() method</primary></indexterm> method to retrieve the subfield code and a <methodname>getData()</methodname><indexterm><primary>getData() method</primary></indexterm> method to retrieve the data element.</para> 
+<para>The following code listing retrieves the title information field and writes the tag, indicators and subfields to standard output:</para>
+     <programlisting lang="Java">
+DataField field = (DataField) record.getVariableField("245");
+
+String tag = field.getTag();
+char ind1 = field.getIndicator1();
+char ind2 = field.getIndicator2();
+
+System.out.println("Tag: " + tag + " Indicator 1: " + ind1 + 
+    " Indicator 2: " + ind2);
+
+List subfields = field.getSubfields();
+Iterator i = subfields.iterator();
+
+while (i.hasNext()) {
+
+    Subfield subfield = (Subfield) i.next();
+    char code = subfield.getCode();
+    String data = subfield.getData();
+
+    System.out.println("Subfield code: " + code + 
+        " Data element: " + data);
+
+}
+     </programlisting>
+     <para>For the <emphasis>Summerland</emphasis> record, this would produce the following output:</para>
+     <programlisting>
+Tag: 245 Indicator 1: 1 Indicator 2: 0
+Subfield code: a Data element: Summerland /
+Subfield code: c Data element: Michael Chabon.
+     </programlisting>
+     <para>The <classname>DataField</classname> interface also provides methods to retrieve specific subfields:</para>
+     <programlisting>
+// retrieve the first occurrence of subfield with code 'a'
+Subfield subfield = field.getSubfield('a');
+
+// retrieve all subfields with code 'a'
+List subfields = field.getSubfields('a');
+     </programlisting>
+     <para>The following listing uses <methodname>getSubfield(char code)</methodname><indexterm><primary>getSubfield() method</primary></indexterm> to retrieve the title proper. It then removes the non-sort characters:</para>
+     <programlisting>
+// get data field 245
+DataField field = (DataField) record.getVariableField("245");
+
+// get indicator 2
+char ind2 = field.getIndicator2();
+   
+// get the title proper
+Subfield subfield = field.getSubfield('a');
+String title = subfield.getData();
+
+// remove the non sorting characters
+int nonSort = Character.digit(ind2, 10);
+title = title.substring(nonSort);
+     </programlisting>
+     <para>In addition to retrieving fields by tag name, you can also retrieve fields by data element values using the <methodname>find()</methodname><indexterm><primary>find() method</primary></indexterm> methods. The search capabilities are limited, but they can be useful when processing records. This method call retrieves all fields that contain the text 'Chabon':</para>
+     <programlisting>
+List fields = record.find("Chabon");
+     </programlisting>
+     <para>You can add a tag value to limit the result to a particular tag. The following example limits the fields that are searched to the title statement:</para>
+     <programlisting>
+List fields = record.find("245", "Summerland");
+     </programlisting>
+     <para>You can add multiple tag values using a <classname>String</classname> array. To find 'Graham, Paul' in main or added entries for a personal name:</para>
+     <?hard-pagebreak?>
+     <programlisting>
+String tags = {"100", "600"};
+List fields = record.find(tags, "Graham, Paul")
+     </programlisting>  
+     <para>The <methodname>find()</methodname> method is also useful if you need to retrieve records that meet certain criteria, such as a specific control number, title words or a particular publisher or subject. <xref linkend="checkagency.example"/> shows a complete example. It checks if the cataloging agency is DLC. It also shows how you can extend the find capabilities to specific subfields. This feature is not directly available in MARC4J, since it is easy to accomplish using the record object model together with the standard Java API's.</para>
+     <example id="checkagency.example">
+       <title>A Check Agency Program</title>
+       <programlisting lang="Java">
+import java.io.InputStream;
+import java.io.FileInputStream;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.marc.Record;
+import org.marc4j.marc.DataField;
+import java.util.List;
+
+public class CheckAgencyExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("file.mrc");
+
+        MarcReader reader = new MarcStreamReader(input);
+	while (reader.hasNext()) {
+    	    Record record = reader.next();
+    	
+	    // check if the cataloging agency is DLC
+	    List result = record.find("040", "DLC");
+	    if (result.size() > 0)
+		System.out.println("Agency for this record is DLC");
+    	
+            // it is not possible to specify a subfield code
+            // so to check if it is the original cataloging agency
+            DataField field = (DataField)result.get(0);
+	    String agency = field.getSubfield('a').getData();
+
+	    if (agency.matches("DLC"))
+                System.out.println("DLC is the original agency");    	    
+        }
+    }
+
+}
+     </programlisting>
+   </example>
+   <para>By using <methodname>find()</methodname> you can also implement search and replace functionalities to batch update records that meet certain criteria. You can use Java regular expressions. Check the <classname>java.util.regex</classname> package for more information and examples about pattern matching. <emphasis>Mastering Regular Expressions</emphasis> by Jeffrey E.F. Friedl is an excellent book if you want to learn more about regular expressions. It also covers the <classname>java.util.regex</classname> package.</para>
+  </sect1>
+  <sect1>
+    <title>Creating and Updating Records</title>
+    <para>You can use the record object model to create or update records. This is done using the <classname>MarcFactory</classname><indexterm><primary>MarcFactory class</primary></indexterm>. This class provides a number of helper methods to create instances of <classname>Record</classname>, <classname>Leader</classname>, <classname>ControlField</classname>, <classname>DataField</classname> and <classname>Subfield</classname> implementations. The following listing demonstrates some of the features <classname>MarcFactory</classname> provides by creating a minimal level record from scratch. It contains the control number field and a single data field holding the title proper and statement of responsibility.</para>
+    <programlisting lang="Java">
+// create a factory instance
+MarcFactory factory = MarcFactory.newInstance();
+	
+// create a record with leader
+Record record = factory.newRecord("00000cam a2200000 a 4500");
+	
+// add a control field
+record.addVariableField(factory.newControlField("001", "12883376"));
+	
+// create a data field
+DataField dataField = factory.newDataField("245", '1', '0');
+dataField.addSubfield(factory.newSubfield('a', "Summerland /"));
+dataField.addSubfield(factory.newSubfield('c', "Michael Chabon."));
+
+// add the data field to the record
+record.addVariableField(dataField);
+    </programlisting>
+    <para>The main purpose of the <classname>MarcFactory</classname> class is to enable you to update existing records. In <xref linkend="addlocation.example"/> it is used to add an electronic location to the <emphasis>Summerland</emphasis> record.</para>
+    <example id="addlocation.example">
+      <title>Add Electronic Location</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.marc.DataField;
+import org.marc4j.marc.MarcFactory;
+import org.marc4j.marc.Record;
+
+public class AddLocationExample {
+
+    public static void main(String args[]) throws Exception {
+
+	InputStream in = new FileInputStream("summerland.mrc");
+
+        MarcFactory factory = MarcFactory.newInstance();
+
+        MarcReader reader = new MarcStreamReader(in);
+        while (reader.hasNext()) {
+             Record record = reader.next();
+
+             DataField field = factory.newDataField("856", '4', '2');
+
+             field.addSubfield(factory.newSubfield('3',
+                 "Contributor biographical information"));
+
+             field.addSubfield(factory.newSubfield('u',
+                 "http://en.wikipedia.org/wiki/Michael_Chabon"));
+
+             record.addVariableField(field);
+
+             System.out.println(record.toString());
+        }    
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>In this example, the <classname>MarcFactory</classname> instance is used to create the <classname>DataField</classname> and the two subfields containing the data elements for the electronic location. The new data field is then added to the <classname>Record</classname> instance. When you compile and run this program, it will write the <emphasis>Summerland</emphasis> record to standard output with the new field containing the reference to the biographical information about the author:</para>
+    <screen>
+LEADER 00714cam a2200205 a 4500
+001 12883376
+005 20030616111422.0
+008 020805s2002    nyu    j      000 1 eng  
+020   $a0786808772
+020   $a0786816155 (pbk.)
+040   $aDLC$cDLC$dDLC
+100 1 $aChabon, Michael.
+245 10$aSummerland /$cMichael Chabon.
+250   $a1st ed.
+260   $aNew York :$bMiramax Books/Hyperion Books for Children,$cc2002.
+300   $a500 p. ;$c22 cm.
+520   $aEthan Feld, the worst baseball player in the history of the game, 
+  finds himself recruited by a 100-year-old scout to help a band of 
+  fairies triumph over an ancient enemy.
+650  1$aFantasy.
+650  1$aBaseball$vFiction.
+650  1$aMagic$vFiction.
+856 42$3Contributor biographical information$uhttp://en.wikipedia.org/
+  wiki/Michael_Chabon
+    </screen>
+    <para>Since one of the design goals of the record object model was to keep the interface as simple as possible, there are no specific methods to execute such operations as removing fields based on particular conditions<indexterm><primary>Record interface</primary><secondary>removing fields</secondary></indexterm>. This means that you have to write such methods yourself. <xref linkend="remove.local.example"/> removes all local fields (tags 9XX) from the record read from the input stream. It will first write the original record to standard output and then the updated record without the local fields.</para>
+    <example id="remove.local.example">
+      <title>Remove Local Fields</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.marc.DataField;
+import org.marc4j.marc.Record;
+
+public class RemoveLocalFieldsExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream in = new FileInputStream("summerland.mrc");
+
+        Pattern pattern = Pattern.compile("9\\d\\d");
+
+        MarcReader reader = new MarcStreamReader(input);
+        while (reader.hasNext()) {
+            Record record = reader.next();
+
+            System.out.println(record.toString());
+
+            List fields = record.getDataFields();
+
+            Iterator i = fields.iterator();
+            while (i.hasNext()) {
+                DataField field = (DataField) i.next();
+                Matcher matcher = pattern.matcher(field.getTag());
+                if (matcher.matches())
+                    i.remove();
+            }
+
+            System.out.println(record.toString());
+        }
+
+    }
+}
+      </programlisting>
+    </example>
+<para>A regular expression is used to match all tags that start with a 9 followed by two digits:</para>
+    <programlisting>
+Pattern pattern = Pattern.compile("9\\d\\d");
+    </programlisting>
+    <para>The <methodname>getDataFields()</methodname><indexterm><primary>getDataFields() method</primary></indexterm> method returns the <classname>List</classname> instance that holds the <classname>DataField</classname> objects for the record, so you can directly manipulate this list using the <classname>Iterator</classname> class. Each tag in the list of data fields is matched against the pattern. If there is a match, the field is removed from the list using the <methodname>Iterator.remove()</methodname> method:</para>
+    <programlisting>
+Matcher matcher = pattern.matcher(field.getTag());
+if (matcher.matches())
+    i.remove();
+    </programlisting>
+    <para>You can directly manipulate the <classname>List</classname> objects returned by the <methodname>getControlFields()</methodname><indexterm><primary>getControlFields() method</primary></indexterm> and <methodname>getDataFields()</methodname><indexterm><primary>getDataFields() method</primary></indexterm> methods, but you cannot directly manipulate the <classname>List</classname> object returned by the <methodname>getVariableFields()</methodname><indexterm><primary>getVariableFields() method</primary></indexterm> method. You can use the method <methodname>removeVariableField(VariableField)</methodname><indexterm><primary>removeVariableField() method</primary></indexterm> in these cases.</para> 
+  </sect1>
+  <sect1>
+    <title>Reading MARCXML Data</title>
+   <para>Until now we have been processing MARC data in ISO 2709 format, but you can also read MARC data in MARCXML<indexterm><primary>MARCXML</primary></indexterm> format. The MARC 21 XML schema<indexterm><primary>MARC 21 XML Schema</primary></indexterm> was published in June 2002 by the Library of Congress to encourage the standardization of MARC 21 records in XML environments. The schema was developed in collaboration with OCLC and RLG after a survey of schema's that were used in various projects trying to bridge the gap between MARC and XML, including a MARCXML schema developed by the OAI (Open Archives Initiative) and the one used in early releases of MARC4J. The MARCXML schema is specified in a W3C XML Schema and provides lossless conversion between MARC ISO 2709 and MARCXML. As a consequence, information in a MARCXML record enables recreation of a MARC ISO 2709 record without loss of data. <xref linkend="marcxml.figure"/> shows the record for <emphasis>Summerland</emphasis> by Michael Chabon in MARCXML:</para>
+   <figure id="marcxml.figure">
+     <title>MARCXML Record</title>
+     <screen><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<collection xmlns="http://www.loc.gov/MARC21/slim">
+  <record>
+    <leader>00714cam a2200205 a 4500</leader>
+    <controlfield tag="001">12883376</controlfield>
+    <controlfield tag="005">20030616111422.0</controlfield>
+    <controlfield tag="008">020805s2002    nyu    j      0
+  00 1 eng  </controlfield>
+    <datafield tag="020" ind1=" " ind2=" ">
+      <subfield code="a">0786808772</subfield>
+    </datafield>
+    <datafield tag="020" ind1=" " ind2=" ">
+      <subfield code="a">0786816155 (pbk.)</subfield>
+    </datafield>
+    <datafield tag="040" ind1=" " ind2=" ">
+      <subfield code="a">DLC</subfield>
+      <subfield code="c">DLC</subfield>
+      <subfield code="d">DLC</subfield>
+    </datafield>
+    <datafield tag="100" ind1="1" ind2=" ">
+      <subfield code="a">Chabon, Michael.</subfield>
+    </datafield>
+    <datafield tag="245" ind1="1" ind2="0">
+      <subfield code="a">Summerland /</subfield>
+      <subfield code="c">Michael Chabon.</subfield>
+    </datafield>
+    <datafield tag="250" ind1=" " ind2=" ">
+      <subfield code="a">1st ed.</subfield>
+    </datafield>
+    <datafield tag="260" ind1=" " ind2=" ">
+      <subfield code="a">New York :</subfield>
+      <subfield code="b">Miramax Books/Hyperion Books for 
+  Children,</subfield>
+      <subfield code="c">c2002.</subfield>
+    </datafield>
+    <datafield tag="300" ind1=" " ind2=" ">
+      <subfield code="a">500 p. ;</subfield>
+      <subfield code="c">22 cm.</subfield>
+    </datafield>
+    <datafield tag="520" ind1=" " ind2=" ">
+      <subfield code="a">Ethan Feld, the worst baseball player in the 
+  history of the game, finds himself recruited by a 100-year-old scout 
+  to help a band of fairies triumph over an ancient enemy.</subfield>
+    </datafield>
+    <datafield tag="650" ind1=" " ind2="1">
+      <subfield code="a">Fantasy.</subfield>
+    </datafield>
+    <datafield tag="650" ind1=" " ind2="1">
+      <subfield code="a">Baseball</subfield>
+      <subfield code="v">Fiction.</subfield>
+    </datafield>
+    <datafield tag="650" ind1=" " ind2="1">
+      <subfield code="a">Magic</subfield>
+      <subfield code="v">Fiction.</subfield>
+    </datafield>
+  </record>
+</collection>]]>
+     </screen>
+   </figure>
+   <para>As you can see the markup and content are still the same. The variable fields have tags and the data fields have indicators and subfields identified by a code. The only difference from the record in ISO 2709 format is that the MARCXML record is structured using XML markup. There is even data present that has no meaning outside the ISO 2709 format, like the record length and the base address of data in the leader. A MARCXML record is more readable than a record in ISO 2709 format, but it is still not very user friendly, because it uses the numeric tags instead of language-based elements, like for example <emphasis>title</emphasis> or <emphasis>subject</emphasis>. It is not the goal of MARCXML to provide a markup that is end user oriented. The only purpose of MARCXML is to bridge the gap between MARC and XML. Where ISO 2709 is an exchange format, MARCXML is an intermediary format.</para>
+   <para>Reading MARCXML data is not different from reading MARC data in ISO 2709 format, but the MARCXML reader provides some additional XML related features. <xref linkend="read.marcxml"/> is similar to <xref linkend="first.example"/>, but now reading a file containing records in MARCXML format.</para>
+    <example id="read.marcxml">
+      <title>Reading MARCXML Data</title>
+      <programlisting lang="Java">
+import org.marc4j.MarcReader;
+import org.marc4j.MarcXmlReader;
+import org.marc4j.marc.Record;
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+public class ReadMarcXmlExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream in = new FileInputStream("summerland.xml");
+
+        MarcReader reader = new MarcXmlReader(in);
+
+        while (reader.hasNext()) {
+             Record record = reader.next();
+             System.out.println(record.toString());
+        }    
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>When you compile and run this program, it will write each record in tagged display format to standard output:</para>
+    <screen>
+LEADER 00714cam a2200205 a 4500
+001 12883376
+005 20030616111422.0
+008 020805s2002    nyu    j      000 1 eng
+020   $a0786808772
+020   $a0786816155 (pbk.)
+040   $aDLC$cDLC$dDLC
+100 1 $aChabon, Michael.
+245 10$aSummerland /$cMichael Chabon.
+250   $a1st ed.
+260   $aNew York :$bMiramax Books/Hyperion Books for Children,$cc2002.
+300   $a500 p. ;$c22 cm.
+520   $aEthan Feld, the worst baseball player in the history of the 
+  game, finds himself recruited by a 100-year-old scout to help a 
+  band of fairies triumph over an ancient enemy.
+650  1$aFantasy.
+650  1$aBaseball$vFiction.
+650  1$aMagic$vFiction.
+    </screen>
+    <para>Instead of using an instance of <classname>InputStream</classname>, you can create a <classname>MarcXmlReader</classname><indexterm><primary>MarcXmlReader class</primary></indexterm> using an instance of <classname>InputSource</classname><indexterm><primary>InputSource class</primary></indexterm>. The <classname>InputSource</classname> class is part of the SAX (Simple API for XML) interface. It has several constructors to provide input data to the underlying XML parser that is used to create <classname>Record</classname> objects from the MARCXML document. The following list summarizes the most important features:</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>InputSource(String)</classname></term>
+	<listitem>
+	  <para>Use this constructor to provide data from a fully qualified URI, including <emphasis>http://</emphasis>, <emphasis>file://</emphasis> or <emphasis>ftp://</emphasis>.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>InputSource(java.io.Reader)</classname></term>
+	<listitem>
+	  <para>Use this constructor to provide pre-decoded data to the parser. The parser will ignore the character encoding in the XML declaration.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>InputSource(java.io.InputStream)</classname></term>
+	<listitem>
+	  <para>Use this constructor to provide binary data to the parser. The parser will then try to detect the encoding from the binary data or the XML declaration.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>InputSource.setEncoding(String)</classname></term>
+	<listitem>
+	  <para>Use this method to specify the character encoding of the XML data that is provided to the parser.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para><xref linkend="inputsource.example"/> reads data from a given HTTP address using a <classname>MarcXmlReader</classname> constructor that takes an instance of <classname>InputSource</classname> as a parameter.</para>
+    <example id="inputsource.example">
+      <title>Reading MARCXML from an <classname>InputSource</classname></title>
+      <programlisting lang="Java">
+import org.marc4j.MarcReader;
+import org.marc4j.MarcXmlReader;
+import org.marc4j.marc.Record;
+import org.xml.sax.InputSource;
+
+public class ReadFromInputSourceExample {
+
+    public static void main(String args[]) throws Exception {
+
+        String systemId = 
+          "http://www.loc.gov/standards/marcxml/Sandburg/sandburg.xml";
+
+        InputSource input = new InputSource(systemId);
+
+        MarcReader reader = new MarcXmlReader(input);
+
+        while (reader.hasNext()) {
+            Record record = reader.next();
+            System.out.println(record.toString());
+        }
+
+    }
+
+}
+      </programlisting>
+    </example>
+  </sect1>
+  <sect1>
+    <title>Reading MODS Data</title>
+    <para>Let's look at some of the specific XML related features of <classname>MarcXmlReader</classname><indexterm><primary>MarcXmlReader class</primary><secondary>pre-process with XSLT</secondary></indexterm>. The most interesting feature is that you can pre-process the input using a stylesheet. This enables you to create a stylesheet in XSLT that transforms XML data to MARCXML. You can then process the result like you would do with MARCXML or MARC in ISO 2709 format. To demonstrate this feature we will use MARC4J to create <classname>Record</classname> objects from MODS data.</para> 
+    <para>MODS is a schema for a bibliographic element set that is maintained by the Library of Congress. The schema provides a subset of the MARC standard, but an advantage to the MARCXML format is that it uses language-based tags rather than numeric ones. MODS can carry selected data from existing MARC records, but the standard also enables the creation of original resource description records. The MODS syntax is richer than the Dublin Core element set, but it is simpler to apply than the full MARC 21 bibliographic format. <xref linkend="mods.figure"/> shows a bibliographic record for <emphasis>Summerland</emphasis> by Michael Chabon in MODS.</para>
+    <figure id="mods.figure">
+      <title>MODS Record</title>
+      <screen>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<modsCollection xmlns="http://www.loc.gov/mods/v3">
+  <mods version="3.0">
+    <titleInfo>
+      <title>Summerland</title>
+    </titleInfo>
+    <name type="personal">
+      <namePart>Chabon, Michael.</namePart>
+      <role>
+	<roleTerm authority="marcrelator" type="text">creator</roleTerm>
+      </role>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <originInfo>
+      <place>
+	<placeTerm type="code" authority="marccountry">nyu</placeTerm>
+      </place>
+      <place>
+	<placeTerm type="text">New York</placeTerm>
+      </place>
+      <publisher>Miramax Books/Hyperion Books for Children</publisher>
+      <dateIssued>c2002</dateIssued>
+      <dateIssued encoding="marc">2002</dateIssued>
+      <edition>1st ed.</edition>
+      <issuance>monographic</issuance>
+    </originInfo>
+    <language>
+      <languageTerm authority="iso639-2b" type="code">eng</languageTerm>
+    </language>
+    <physicalDescription>
+      <form authority="marcform">print</form>
+      <extent>500 p. ; 22 cm.</extent>
+    </physicalDescription>
+    <abstract>Ethan Feld, the worst baseball player in the history of 
+  the game, finds himself recruited by a 100-year-old scout to help a 
+  band of fairies triumph over an ancient enemy.</abstract>
+    <targetAudience authority="marctarget">juvenile</targetAudience>
+    <note type="statement of responsibility">Michael Chabon.</note>
+    <subject>
+      <topic>Fantasy</topic>
+    </subject>
+    <subject>
+      <topic>Baseball</topic>
+      <topic>Fiction</topic>
+    </subject>
+    <subject>
+      <topic>Magic</topic>
+      <topic>Fiction</topic>
+    </subject>
+    <identifier type="isbn">0786808772</identifier>
+    <identifier type="isbn">0786816155 (pbk.)</identifier>
+    <recordInfo>
+      <recordContentSource authority="marcorg">DLC</recordContentSource>
+      <recordCreationDate encoding="marc">020805</recordCreationDate>
+      <recordIdentifier>12883376</recordIdentifier>
+    </recordInfo>
+  </mods>
+</modsCollection>]]>
+      </screen>
+    </figure>
+    <para>The Library of Congress provides a stylesheet that transforms MODS to MARCXML. Using this stylesheet you can process the bibliographic information contained in a collection of MODS records as MARC data. To do this, you need to add the stylesheet location as an argument when you create the <classname>MarcXmlReader</classname> instance. <xref linkend="reading.mods"/> shows the code to create <classname>Record</classname> objects from MODS input.</para>
+    <example id="reading.mods">
+      <title>Reading MODS Data</title>
+      <programlisting lang="Java">
+import org.marc4j.MarcReader;
+import org.marc4j.MarcXmlReader;
+import org.marc4j.marc.Record;
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+public class ModsToMarc21Example {
+
+    public static void main(String args[]) throws Exception {
+
+        String stylesheetUrl = 
+         "http://www.loc.gov/standards/marcxml/xslt/MODS2MARC21slim.xsl";
+
+	InputStream in = new FileInputStream("mods.xml");
+        MarcReader reader = new MarcXmlReader(in, stylesheetUrl);
+        while (reader.hasNext()) {
+             Record record = reader.next();
+             System.out.println(record.toString());
+        }    
+
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>The <parameter>stylesheetUrl</parameter> variable contains a reference to the location of the XSLT stylesheet. It is passed as an argument on creation of the <classname>MarcXmlReader</classname>. The reader first transforms the MODS data to MARCXML using the given stylesheet. The XSLT output is then parsed by the <classname>MarcXmlReader</classname> to create <classname>Record</classname> objects. When you compile and run this program, it will write the converted data from the MODS document to standard output:</para>
+    <screen>
+LEADER 00000nam  2200000uu 4500
+001 12883376
+005 20030616111422.0
+008 020805|2002    nyu||||j |||||||||||eng||
+020   $a0786808772
+020   $a0786816155 (pbk.)
+040   $aDLC
+100 1 $aChabon, Michael.$ecreator
+245 10$aSummerland$cMichael Chabon.
+250   $a1st ed.
+260   $aNew York$bMiramax Books/Hyperion Books for Children$cc2002$c2002
+300   $a500 p. ; 22 cm.
+520   $aEthan Feld, the worst baseball player in the history of the 
+  game, finds himself recruited by a 100-year-old scout to help a band 
+  of fairies triumph over an ancient enemy.
+650 1 $aFantasy
+650 1 $aBaseball$xFiction
+650 1 $aMagic$xFiction
+    </screen>
+    <para>In addition to the stylesheet to transform MODS data to MARCXML, the Library of Congress<indexterm><primary>Library of Congress</primary><secondary>stylesheets</secondary></indexterm> provides the following stylesheets that transform different bibliographic formats to MARCXML:</para>
+    <variablelist>
+      <varlistentry>
+	<term>Dublin Core to MARCXML Stylesheet</term>
+	<listitem>
+	  <para>The Dublin Core metadata standard is a simple element set for describing a wide range of networked resources. The Dublin Core basic element set comprises fifteen elements such as title, creator, publisher, date, description, subject and identifier. Each element is optional and may be repeated.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>OAI MARC to MARCXML Stylesheet</term>
+	<listitem>
+	  <para>The OAI (Open Archives Initiative) MARC schema was developed for the exchange of MARC records using OAI protocols.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>ONIX to MARCXML Stylesheet</term>
+	<listitem>
+	  <para>The ONIX schema is an international standard for representing and communicating book industry product information in electronic form.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MARC DTD to MARCXML Stylesheet</term>
+	<listitem>
+	  <para>The MARC DTD's were developed in the mid 1990's to support the conversion of MARC data to SGML (Structured Generalized Markup Language). Although the DTD's have been converted to XML DTD's, they are retired in favor of the MARCXML schema.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>You can find the stylesheets at the Tools &amp; Utilities section of the MARCXML standards page. In <xref linkend="ch03"/> we take a closer look at MARC4J in XML environments.</para>
+  </sect1>
+  <?hard-pagebreak?>
+  <sect1>
+    <title>Implementing MarcReader</title>
+    <para>Sometimes you need to read data that is not in ISO 2709 or a given XML format. In these cases you can implement the <classname>MarcReader</classname> interface to create <classname>Record</classname> objects from an input source. To do this you need to implement two methods:</para>
+    <variablelist>
+      <varlistentry>
+	<term><methodname>hasNext()</methodname><indexterm><primary>hasNext() method</primary></indexterm></term>
+	<listitem>
+	  <para>Implement this method to provide an iterator that returns <varname>true</varname> if there are more records available from the input source and <varname>false</varname> when the end of the file is reached.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>next()</methodname><indexterm><primary>next() method</primary></indexterm></term>
+	<listitem>
+	  <para>Implement this method to return the next record in the iteration as a <classname>Record</classname> object.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Depending on the data structure you need to parse, writing a custom <classname>MarcReader</classname> implementation can become quite complicated. It is not the goal of this book to teach you how to write parsers in Java, so we will look at a simple implementation. It creates minimal level authority records from a Tab-separated file containing personal names. Each line contains the control number, the personal name and the dates associated with the name. The input file might look like this:</para>
+    <programlisting>
+34284	Thoreau, Henry David	1817-1862
+34542	Hawthorne, Nathaniel	1804-1864
+12435	Emerson, Ralph Waldo	1803-1882
+    </programlisting>
+    <para>Since each line contains a record, we can read lines from the input file and then split each line into a list of tokens. We start with the <methodname>hasNext()</methodname> method. This method should return <varname>true</varname> if there are more lines to read from the reader, or <varname>false</varname> if it reached the end of the file:</para> 
+    <programlisting>
+if ((line = br.readLine()) != null)
+    return true;
+else
+    return false;
+    </programlisting>
+    <para>Each line is then parsed by the <methodname>next()</methodname> method. The first step is to split the line into tokens. The resulting <classname>String</classname> array should contain three tokens:</para>
+    <programlisting>
+String[] tokens = line.trim().split("\t");
+
+if (tokens.length != 3)
+    throw new MarcException("Invalid number of tokens");
+    </programlisting>
+    <para>You can then use the <classname>MarcFactory</classname> class to create the record object:</para>
+    <programlisting>
+MarcFactory factory = MarcFactory.newInstance();        
+
+Record record = factory.newRecord("00000nz  a2200000o  4500");
+
+ControlField controlField = 
+    factory.newControlField("001", tokens[0]);
+
+record.addVariableField(controlField);
+
+DataField dataField = factory.newDataField("100", ' ', ' ');
+dataField.addSubfield(factory.newSubfield('a', tokens[1]));
+dataField.addSubfield(factory.newSubfield('d', tokens[2]));
+
+record.addVariableField(dataField);
+    </programlisting>
+    <para>The code in <xref linkend="marcreader.impl"/> shows the complete code for the <classname>MarcReader</classname> implementation to parse a Tab-separated file and create minimal level authority records.</para>
+    <example id="marcreader.impl">
+      <title>MarcReader Implementation</title>
+      <programlisting>
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
+import org.marc4j.MarcException;
+import org.marc4j.MarcReader;
+import org.marc4j.marc.ControlField;
+import org.marc4j.marc.DataField;
+import org.marc4j.marc.MarcFactory;
+import org.marc4j.marc.Record;
+
+public class PersonalNamesReader implements MarcReader {
+
+    private BufferedReader br = null;
+
+    private String line;
+
+    public PersonalNamesReader(InputStream in) {        
+        br = new BufferedReader(new InputStreamReader(in));
+    }
+
+    public boolean hasNext() {
+        try {
+            if ((line = br.readLine()) != null)
+                return true;
+            else
+                return false;
+        } catch (IOException e) {
+            throw new MarcException(e.getMessage(), e);
+        }
+    }
+
+    public Record next() {
+        String[] tokens = line.trim().split("\t");
+                
+        if (tokens.length != 3)
+            throw new MarcException("Invalid number of tokens");
+
+        MarcFactory factory = MarcFactory.newInstance();
+
+        Record record = factory.newRecord("00000nz  a2200000o  4500");
+
+        ControlField controlField = 
+            factory.newControlField("001", tokens[0]);
+
+        record.addVariableField(controlField);
+
+        DataField dataField = factory.newDataField("100", ' ', ' ');
+        dataField.addSubfield(factory.newSubfield('a', tokens[1]));
+        dataField.addSubfield(factory.newSubfield('d', tokens[2]));
+
+        record.addVariableField(dataField);
+
+        return record;
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>Using the <classname>PersonalNamesReader</classname> is not different from using the <classname>MarcStreamReader</classname> or <classname>MarcXmlReader</classname> class. <xref linkend="read.names"/> shows the code for a driver to test the <classname>MarcReader</classname> implementation. It reads lines from a file called <filename>names.txt</filename> located in the current directory and writes the authority records to standard output using the <methodname>toString()</methodname> method.</para>
+    <example id="read.names">
+      <title>Driver for PersonalNamesReader</title>
+      <programlisting lang="Java">
+import org.marc4j.MarcReader;
+import org.marc4j.marc.Record;
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+public class ReadPersonalNames {
+
+    public static void main(String args[]) throws Exception {
+
+	InputStream in = new FileInputStream("names.txt");
+
+        MarcReader reader = new PersonalNamesReader(in);
+
+        while (reader.hasNext()) {
+             Record record = reader.next();
+             System.out.println(record.toString());
+        }    
+
+    }
+
+}
+      </programlisting>
+    </example>
+    <?hard-pagebreak?>
+    <para>When you compile and run this program, it will write each record in tagged display format to standard output:</para>
+    <programlisting>
+LEADER 00000nz  a2200000o  4500
+001 34284
+100 1 $aThoreau, Henry David$d1817-1862
+
+LEADER 00000nz  a2200000o  4500
+001 34542
+100 1 $aHawthorne, Nathaniel$d1804-1864
+
+LEADER 00000nz  a2200000o  4500
+001 12435
+100 1 $aEmerson, Ralph Waldo$d1803-1882
+    </programlisting>
+  </sect1>
+</chapter>

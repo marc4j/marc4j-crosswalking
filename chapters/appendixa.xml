@@ -1,0 +1,780 @@
+<appendix id="appendixa">
+  <title>MARC4J API Summary</title>
+  <para>This appendix provides a quick reference to the MARC4J API. It provides a brief overview for the core interfaces and classes.</para>
+  <sect1>
+    <title>The org.marc4j Package</title>
+    <para>The <classname>org.marc4j</classname> package holds the interfaces and classes for reading and writing MARC and MARCXML data.</para>
+    <sect2>
+      <title>MarcReader</title>
+      <para>Implement this interface to provide an iterator over a collection of <classname>Record</classname> objects.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>hasNext()</methodname></term>
+	  <listitem>
+	    <para>Returns true if the iteration has more records, false otherwise.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>next()</methodname></term>
+	  <listitem>
+	    <para>Returns the next record in the iteration.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <para>MARC4J provides two <classname>MarcReader</classname> implementations:</para>
+      <variablelist>
+	<varlistentry>
+	  <term><classname>MarcStreamReader</classname></term>
+	  <listitem>
+	    <para>An iterator over a collection of MARC records in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><classname>MarcXmlReader</classname></term>
+	  <listitem>
+	    <para>An iterator over a collection of MARC records in MARCXML format.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>      
+      <title>MarcWriter</title>
+      <para>Implement this interface to provide a writer for <classname>Record</classname> objects.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>close()</methodname></term>
+	  <listitem>
+	    <para>Closes the writer.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getConverter()</methodname></term>
+	  <listitem>
+	    <para>Returns the character converter.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>setConverter(CharConverter converter)</methodname></term>
+	  <listitem>
+	    <para>Sets the character converter.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>write(Record record)</methodname></term>
+	  <listitem>
+	    <para>Writes a single Record to the output stream.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <para>MARC4J provides two <classname>MarcWriter</classname> implementations:</para>
+      <variablelist>
+	<varlistentry>
+	  <term><classname>MarcStreamWriter</classname></term>
+	  <listitem>
+	    <para>Class for writing MARC record objects in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><classname>MarcXmlWriter</classname></term>
+	  <listitem>
+	    <para>Class for writing MARC record objects in MARCXML format.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>The org.marc4j.marc Package</title>
+    <para>The <classname>org.marc4j.marc</classname> package holds the interfaces that incorporate the behaviour and data of a MARC record and contains the default implementation of this domain model.</para>
+    <sect2>
+      <title>Record</title>
+      <para>Represents a MARC record.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>addVariableField(VariableField field)</methodname></term>
+	  <listitem>
+	    <para>Adds a <classname>VariableField</classname> object.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>find(String pattern)</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of <classname>VariableField</classname> objects that have a data element that matches the given regular expression.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>find(String[] tag, String pattern)</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of <classname>VariableField</classname> objects with the given tags that have a data element that matches the given regular expression.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>find(String tag, String pattern)</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of <classname>VariableField</classname> objects with the given tag that have a data element that matches the given regular expression.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getControlFields()</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of control fields</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getControlNumber()</methodname></term>
+	  <listitem>
+	    <para>Returns the control number or null if no control number is available.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getControlNumberField()</methodname></term>
+	  <listitem>
+	    <para>Returns the control number field or null if no control number field is available.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getDataFields()</methodname></term>
+	  <listitem>
+	    <para>Returns a list of data fields</para>
+	  </listitem>
+	</varlistentry>          
+	<varlistentry>
+	  <term><methodname>getLeader()</methodname></term>
+	  <listitem>
+	    <para>Returns the Leader.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getType()</methodname></term>
+	  <listitem>
+	    <para>Returns the type of record.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getVariableField(String tag)</methodname></term>
+	  <listitem>
+	    <para>Returns the first instance of <classname>VariableField</classname> with the given tag.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getVariableFields()</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of variable fields</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getVariableFields(String tag)</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of variable fields with the given tag.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getVariableFields(String[] tag)</methodname></term>
+	  <listitem>
+	    <para>Returns a <classname>List</classname> of <classname>VariablField</classname> objects for the given tags.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>removeVariableField(VariableField field)</methodname></term>
+	  <listitem>
+	    <para>Removes a variable field from the collection. Use this method to remove fields obtained from a <methodname>getVariableFields()</methodname> method.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setLeader(Leader leader)</methodname></term>
+	  <listitem>
+	    <para>Sets the <classname>Leader</classname> object.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setType(String type)</methodname></term>
+	  <listitem>
+	    <para>Sets the type of record.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>Leader</title>
+      <para>Represents a record label in a MARC record.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>getBaseAddressOfData()</methodname></term>
+	  <listitem>
+	    <para>Returns the base address of data (positions 12-16).</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>getCharCodingScheme()</methodname></term>
+	  <listitem>
+	    <para>Returns the character coding scheme (position 09).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getEntryMap()</methodname></term>
+	  <listitem>
+	    <para>Returns the entry map (positions 20-23).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getImplDefined1()</methodname></term>
+	  <listitem>
+	    <para>Returns implementation defined values (positions 07-08).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getImplDefined2()</methodname></term>
+	  <listitem>
+	    <para>Returns implementation defined values (positions 17-19).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getIndicatorCount()</methodname></term>
+	  <listitem>
+	    <para>Returns the indicator count (positions 10).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getRecordLength()</methodname></term>
+	  <listitem>
+	    <para>Returns the logical record length (positions 00-04).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getRecordStatus()</methodname></term>
+	  <listitem>
+	    <para>Returns the record status (positions 05).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getSubfieldCodeLength()</methodname></term>
+	  <listitem>
+	    <para>Returns the subfield code length (position 11).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getTypeOfRecord()</methodname></term>
+	  <listitem>
+	    <para>Returns the record type (position 06).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>marshal()</methodname></term>
+	  <listitem>
+	    <para>Creates a <classname>String</classname> object from this <classname>Leader</classname> object.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setBaseAddressOfData(int baseAddressOfData)</methodname></term>
+	  <listitem>
+	    <para>Sets the base address of data (positions 12-16).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setCharCodingScheme(char charCodingScheme)</methodname></term>
+	  <listitem>
+	    <para>Sets the character encoding scheme (position 09).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setEntryMap(char[] entryMap)</methodname></term>
+	  <listitem>
+	    <para>Sets the entry map (positions 20-23).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setImplDefined1(char[] implDefined1)</methodname></term>
+	  <listitem>
+	    <para>Sets implementation defined values (position 07-08).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setImplDefined2(char[] implDefined2)</methodname></term>
+	  <listitem>
+	    <para>Sets implementation defined values (positions 17-19).</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>setIndicatorCount(int indicatorCount)</methodname></term>
+	  <listitem>
+	    <para>Sets the indicator count (position 10).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setRecordLength(int recordLength)</methodname></term>
+	  <listitem>
+	    <para>Sets the logical record length (positions 00-04).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setRecordStatus(char recordStatus)</methodname></term>
+	  <listitem>
+	    <para>Sets the record status (position 05).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setSubfieldCodeLength(int subfieldCodeLength)</methodname></term>
+	  <listitem>
+	    <para>Sets the subfield code length (position 11).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setTypeOfRecord(char typeOfRecord)</methodname></term>
+	  <listitem>
+	    <para>Sets the type of record (position 06).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>unmarshal(String ldr)</methodname></term>
+	  <listitem>
+	    <para>Creates a <classname>Leader</classname> object from a <classname>String</classname> object.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>VariableField</title>
+      <para>Represents a variable field in a MARC record.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>find(String pattern)</methodname></term>
+	  <listitem>
+	    <para>Returns <varname>true</varname> if the given regular expression matches a subsequence of a data element within the variable field.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getTag()</methodname></term>
+	  <listitem>
+	    <para>Returns the tag name.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setTag(String tag)</methodname></term>
+	  <listitem>
+	    <para>Sets the tag name.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>ControlField</title>
+      <para>Represents a control field in a MARC record.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>getData()</methodname></term>
+	  <listitem>
+	    <para>Returns the data element as a <classname>String</classname> object.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setData(String data)</methodname></term>
+	  <listitem>
+	    <para>Sets the data element.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <?hard-pagebreak?>
+    <sect2>
+      <title>DataField</title>
+      <para>Represents a data field in a MARC record.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>addSubfield(int index, Subfield subfield)</methodname></term>
+	  <listitem>
+	    <para>Inserts a Subfield at the specified position.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>addSubfield(Subfield subfield)</methodname></term>
+	  <listitem>
+	    <para>Adds a Subfield.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getIndicator1()</methodname></term>
+	  <listitem>
+	    <para>Returns the first indicator.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getIndicator2()</methodname></term>
+	  <listitem>
+	    <para>Returns the second indicator.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getSubfield(char code)</methodname></term>
+	  <listitem>
+	    <para>Returns the first <classname>Subfield</classname> object with the given code.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getSubfields()</methodname></term>
+	  <listitem>
+	    <para>Returns the list of <classname>Subfield</classname> objects.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getSubfields(char code)</methodname></term>
+	  <listitem>
+	    <para>Returns the list of Subfield objects for the given subfield code.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>removeSubfield(Subfield subfield)</methodname></term>
+	  <listitem>
+	    <para>Removes a Subfield.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setIndicator1(char ind1)</methodname></term>
+	  <listitem>
+	    <para>Sets the first indicator.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setIndicator2(char ind2)</methodname></term>
+	  <listitem>
+	    <para>Sets the second indicator.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>Subfield</title>
+      <para>Represents a subfield in a MARC record.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>find(String pattern)</methodname></term>
+	  <listitem>
+	    <para>Returns true if the given regular expression matches a subsequence of the data element.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>getCode()</methodname></term>
+	  <listitem>
+	    <para>Returns the data element identifier.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getData()</methodname></term>
+	  <listitem>
+	    <para>Returns the data element.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setCode(char code)</methodname></term>
+	  <listitem>
+	    <para>Sets the data element identifier.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setData(String data)</methodname></term>
+	  <listitem>
+	    <para>Sets the data element.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>MarcFactory</title>
+      <para>Factory for creating MARC record objects.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>newControlField()</methodname></term>
+	  <listitem>
+	    <para>Returns a new control field instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newControlField(String tag)</methodname></term>
+	  <listitem>
+	    <para>Creates a new control field with the given tag and returns the instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newControlField(String tag, String data)</methodname></term>
+	  <listitem>
+	    <para>Creates a new control field with the given tag and data and returns the instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newDataField()</methodname></term>
+	  <listitem>
+	    <para>Returns a new data field instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newDataField(String tag, char ind1, char ind2)</methodname></term>
+	  <listitem>
+	    <para>Creates a new data field with the given tag and indicators and returns the instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newInstance()</methodname></term>
+	  <listitem>
+	    <para>Creates a new factory instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newLeader()</methodname></term>
+	  <listitem>
+	    <para>Returns a new leader instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newLeader(String ldr)</methodname></term>
+	  <listitem>
+	    <para>Creates a new leader with the given String object.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newRecord()</methodname></term>
+	  <listitem>
+	    <para>Returns a new record instance.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>newRecord(Leader leader)</methodname></term>
+	  <listitem>
+	    <para>Returns a new record instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newRecord(String leader)</methodname></term>
+	  <listitem>
+	    <para>Returns a new record instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newSubfield()</methodname></term>
+	  <listitem>
+	    <para>Returns a new subfield instance.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newSubfield(char code)</methodname></term>
+	  <listitem>
+	    <para>Creates a new subfield with the given identifier.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>newSubfield(char code, String data)</methodname></term>
+	  <listitem>
+	    <para>Creates a new subfield with the given identifier and data.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>The org.marc4j.converter Package</title>
+    <para>This package contains the interface for the character converter</para>
+    <sect2>
+      <title>CharConverter</title>
+      <para>Implement this class to create a character converter.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>convert(String dataElement)</methodname></term>
+	  <listitem>
+	    <para>Converts the dataElement and returns the result as a String  object.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    <para>The package <classname>org.marc4j.converter.impl</classname> provides default implementations for three character encodings through the following classes:</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>AnselToUnicode</classname></term>
+	<listitem>
+	  <para>A utility to convert MARC-8 data to non-precomposed UCS/Unicode.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>UnicodeToAnsel</classname></term>
+	<listitem>
+	  <para>A utility to convert UCS/Unicode data to MARC-8.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>Iso5426ToUnicode</classname></term>
+	<listitem>
+	  <para>A utility to convert UNIMARC data to UCS/Unicode.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>UnicodeToIso5426</classname></term>
+	<listitem>
+	  <para>A utility to convert UCS/Unicode data to UNIMARC (ISO 5426 charset).</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>Iso6937ToUnicode</classname></term>
+	<listitem>
+	  <para>A utility to convert ISO 6937 data to UCS/Unicode.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>UnicodeToIso6937</classname></term>
+	<listitem>
+	  <para>A utility to convert UCS/Unicode data to ISO 6937.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>The org.marc4j.util Package</title>
+    <para>This package contains the command-line utilities. See <xref linkend="appendixb"/> for usage.</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>MarcXmlDriver</classname></term>
+	<listitem>
+	  <para>Provides a basic driver to convert MARC records to MARCXML.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>XmlMarcDriver</classname></term>
+	<listitem>
+	  <para>Provides a driver to convert MARCXML records to MARC format.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </sect1>
+  <sect1>
+    <title>The org.marc4j.lucene Package</title>
+    <para>The <classname>org.marc4j.lucene</classname> package provides a <classname>MarcWriter</classname> implementation to index MARC data using the Lucene search engine.</para>
+    <sect2>
+      <title>MarcIndexWriter</title>
+      <para>Class for writing Record objects to a Lucene index based on a Lucene document configuration for MARC records. The constructor takes an instance of <classname>org.apache.lucene.index.IndexWriter</classname> and an optional MARC4J Indexing Schema file as arguments.</para>      
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>close()</methodname></term>
+	  <listitem>
+	    <para>Closes the index writer.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>getConverter()</methodname></term>
+	  <listitem>
+	    <para>Returns the character converter.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>setConverter(CharConverter converter)</methodname></term>
+	  <listitem>
+	    <para>Sets the character converter.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <?hard-pagebreak?>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>setUnicodeNormalization(boolean normalize)</methodname></term>
+	  <listitem>
+	    <para>If set to true this writer will perform Unicode normalization on data elements using normalization form C (NFC).</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>write(Record record)</methodname></term>
+	  <listitem>
+	    <para>Creates a Lucene document and adds it to the index.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+  </sect1>
+  <sect1>
+    <title>The org.marc4j.lucene.util Package</title>
+    <para>The <classname>org.marc4j.lucene.util</classname> contains some helper classes and the command-utility to create an index based on MARC records.</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>MarcIndexDriver</classname></term>
+	<listitem>
+	  <para>Provides a basic driver to create a Lucene index for MARC records. See <xref linkend="appendixb"/> for usage.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <sect2>
+      <title>RecordUtils</title>
+      <para>Helper class for serializing and deserializing records.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>marshal(Record record)</methodname></term>
+	  <listitem>
+	    <para>Serializes the given Record object to a byte stream in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>marshal(Record record, CharConverter converter, String encoding)</methodname></term>
+	  <listitem>
+	    <para>Serializes the given Record object to a byte stream in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>marshal(Record record, String encoding)</methodname></term>
+	  <listitem>
+	    <para>Serializes the given Record object to a byte stream in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>toXML(Record record, OutputStream out)</methodname></term>
+	  <listitem>
+	    <para>Serializes a record to MARCXML.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>toXML(Record record, String stylesheetUrl, OutputStream out)</methodname></term>
+	  <listitem>
+	    <para>Serializes a record to MARCXML and then applies the given stylesheet.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>unmarshal(byte[] bytes)</methodname></term>
+	  <listitem>
+	    <para>Builds a Record object from the given byte stream in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>unmarshal(byte[] bytes, String encoding)</methodname></term>
+	  <listitem>
+	    <para>Builds a Record object from the given byte stream in ISO 2709 format.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>QueryHelper</title>
+      <para>Helper class to convert a CQL query to a Lucene query. This class requires the <classname>cql-java.jar</classname> package.</para>
+      <variablelist>
+	<varlistentry>
+	  <term><methodname>toLucene(String cql)</methodname></term>
+	  <listitem>
+	    <para>Converts the given CQL query string to a Lucene query string.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><methodname>toLuceneQuery(String cql)</methodname></term>
+	  <listitem>
+	    <para>Converts the given CQL query string to a Lucene Query object.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </sect2>
+  </sect1>
+</appendix>

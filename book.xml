@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book
+[
+<!ENTITY ch00      SYSTEM "chapters/ch00.xml">
+<!ENTITY ch01      SYSTEM "chapters/ch01.xml">
+<!ENTITY ch02      SYSTEM "chapters/ch02.xml">
+<!ENTITY ch03      SYSTEM "chapters/ch03.xml">
+<!ENTITY ch04      SYSTEM "chapters/ch04.xml">
+<!ENTITY ch05      SYSTEM "chapters/ch05.xml">
+<!ENTITY appendixa SYSTEM "chapters/appendixa.xml">
+<!ENTITY appendixb SYSTEM "chapters/appendixb.xml">
+<!ENTITY biblio    SYSTEM "chapters/bibliography.xml">
+]>
+
+<book id="marc4j">
+  <title>Crosswalking</title>
+  <subtitle>Processing MARC in XML Environments with MARC4J</subtitle>
+  <bookinfo>
+    <edition>First edition</edition>
+    <!--
+    <isbn>ISBN-10: 90-811144-1-7</isbn>
+    <isbn>ISBN-13: 978-90-811144-1-7</isbn>
+    -->
+    <authorgroup>
+      <author>
+        <firstname>Bas</firstname>
+        <surname>Peters</surname>
+      </author>
+    </authorgroup>
+    <pubdate>2007</pubdate>
+    <copyright>
+      <year>2007</year>
+      <holder>by Bas Peters</holder>
+    </copyright>
+    <legalnotice>
+      <simpara>First edition</simpara>
+      <simpara>ISBN 978-1-84753-028-8</simpara>
+<!--
+      <simpara>ISBN-10: 90-811144-1-7</simpara>
+      <simpara>ISBN-13: 978-90-811144-1-7</simpara>
+      <para>No part of this publication may be reproduced, stored in a retrieval system, or transmitted, in any form or by any means electronic, mechanical, photocopying, or otherwise, without prior written permission of the publisher.</para>
+-->
+      <para>Many of the designations used by manufacturers and sellers to distinguish their products are claimed as trademarks. These trademarked names may appear in this book. We use the names in an editorial fashion only with no intention of infringing on the trademark; therefore you will not see the use of a trademark symbol with every occurrence of the trademarked name.</para>
+
+      <para>While every precaution has been taken in the preparation of this book, the author and publisher assume no responsibility for errors or omissions, or for damages resulting from the use of the information contained herein.</para>
+    </legalnotice>
+  </bookinfo>
+
+  &ch00;
+  &ch01;
+  &ch02;
+  &ch03;
+  &ch04;
+  &ch05;
+  &appendixa;
+  &appendixb;
+  &biblio;
+
+</book>

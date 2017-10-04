@@ -1,0 +1,12 @@
+<configuration>
+  <base>.</base>
+  <renderers>
+    <renderer mime="application/pdf">
+       <fonts>
+          <!-- register all the fonts found in a directory -->
+          <directory>/Library/Fonts</directory>
+          <auto-detect/>
+       </fonts>
+    </renderer>
+  </renderers>
+</configuration>

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<locatingRules xmlns="http://thaiopensource.com/ns/locating-rules/1.0">
+  <documentElement localName="book" typeId="DocBook"/>
+  <documentElement localName="chapter" typeId="DocBook"/>
+  <documentElement localName="appendix" typeId="DocBook"/>
+  <documentElement localName="preface" typeId="DocBook"/>
+  <documentElement localName="bibliography" typeId="DocBook"/>
+</locatingRules>

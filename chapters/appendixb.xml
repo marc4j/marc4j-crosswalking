@@ -1,0 +1,274 @@
+<appendix id="appendixb">
+  <title>Command-line Reference</title>
+  <para>MARC4J provides a command line interface through two Java classes. To use them you need a Java Virtual Machine and the MARC4J distribution. Make sure to add both <filename>marc4j.jar</filename> and <filename>normalizer.jar</filename> to the <envar>CLASSPATH</envar> environment variable. The <classname>MarcXmlDriver</classname> class can be used to convert a file containing MARC records to MARCXML or to a different format, like MODS or Dublin Core, by processing the result through an XSLT. The <classname>XmlMarcDriver</classname> class can be used to convert a file containing MARCXML data back to MARC in ISO 2709 format. It is also possible to process the input source through XSLT to create MARCXML from a different source format, like MODS or Dublin Core. The MARC4J Lucene package provides a command line utility to create a Lucene index holding MARC data.</para>
+  <sect1>
+    <title>MARC to XML</title>
+    <para>The <classname>MarcXmlDriver</classname> requires an input file containing one or more MARC records in ISO 2709 format. In addition the class takes zero or more of the following options:</para>
+    <variablelist>
+      <varlistentry>
+	<term><command>-usage</command></term>
+	<listitem>
+	  <para>Show the usage text.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-out</command>&#xA0;<replaceable>output-file</replaceable></term>
+	<listitem>
+	  <para>Specify the name of the output file. If this argument is not present output is written to the console.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-convert</command>&#xA0;<replaceable>encoding</replaceable></term>
+	<listitem>
+	  <para>Convert the data elements to UTF-8 using the given encoding. MARC4J supports the following encodings:</para>
+	  <itemizedlist>
+	    <listitem>
+	      <para><replaceable>MARC8</replaceable> (MARC-8 ANSEL used by MARC 21)</para>
+	    </listitem>
+	    <listitem>
+	      <para><replaceable>ISO5426</replaceable> (ISO 5426 used by UNIMARC records)</para>
+	    </listitem>
+	    <listitem>
+	      <para><replaceable>ISO6937</replaceable> (ISO 6937 used by UNIMARC records)</para>
+	    </listitem>
+	  </itemizedlist>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-encoding</command></term>
+	<listitem>
+	  <para>Decode the input stream using the given encoding name. Use Java encoding names such as UTF8 and ISO8859_1. The default character encoding is Latin 1 (ISO8859_1).</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-normalize</command></term>
+	<listitem>
+	  <para>Perform Unicode normalization. With Unicode normalization text is transformed into the canonical composed form. For example "a´bc" is normalized to "ábc".</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-xsl</command>&#xA0;<replaceable>stylesheet</replaceable></term>
+	<listitem>
+	  <para>Process the result through an XSLT stylesheet located at the given URL. The stylesheet should consume well-formed MARCXML data.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>The examples below assume that you use Sun's Java Virtual Machine. The following command simply converts the given file with MARC records to MARCXML and writes output to the "standard" output stream:</para>
+    <screen>
+<command>java org.marc4j.util.MarcXmlDriver input.mrc</command>
+    </screen>
+    <para>To write the result to a file add a file name and optional path:</para>
+    <screen>
+<command>java org.marc4j.util.MarcXmlDriver -out output.xml input.mrc</command>
+    </screen>
+    <para>To convert MARC 21 records encoded in MARC-8 ANSEL to UTF-8 add the <command>-convert</command> argument with the <replaceable>MARC8</replaceable> encoding value:</para>
+    <screen>
+<command>java org.marc4j.util.MarcXmlDriver -convert MARC8 
+  -out output.xml input.mrc</command>
+    </screen>
+    <para>To perform Unicode normalization:</para>
+    <screen>
+<command>java org.marc4j.util.MarcXmlDriver -convert MARC8 -normalize 
+  -out output.xml input.mrc</command>
+    </screen>
+    <para>This command converts a file containing MARC 21 records to MODS. It uses the XSLT stylesheet provided by the Library of Congress. The MARC-8 ANSEL character data is converted to normalized UTF-8:</para>
+    <screen>
+<command>java org.marc4j.util.MarcXmlDriver -convert MARC8 -normalize
+  -xsl http://www.loc.gov/standards/mods/v3/MARC21slim2MODS3.xsl
+  -out output.xml input.mrc</command>
+    </screen>
+  </sect1>
+  <sect1>
+    <title>XML Back to MARC</title>
+    <para>The <classname>org.marc4j.util.XmlMarcDriver</classname> requires an input file containing MARCXML. In addition the class takes zero or more of the following options:</para>
+    <variablelist>
+      <varlistentry>
+	<term><command>-usage</command></term>
+	<listitem>
+	  <para>Show the usage text.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-out</command>&#xA0;<replaceable>output-file</replaceable></term>
+	<listitem>
+	  <para>Specify the name of the output file. If this argument is not present output is written to the console.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-convert</command>&#xA0;<replaceable>encoding</replaceable></term>
+	<listitem>
+	  <para>Convert the data elements from UTF-8 back to the given encoding. MARC4J supports the following encodings:</para>
+	  <itemizedlist>
+	    <listitem>
+	      <para><replaceable>MARC8</replaceable> (MARC-8 ANSEL used by MARC 21)</para>
+	    </listitem>
+	    <listitem>
+	      <para><replaceable>ISO5426</replaceable> (ISO 5426 used by UNIMARC records)</para>
+	    </listitem>
+	    <listitem>
+	      <para><replaceable>ISO6937</replaceable> (ISO 6937 used by UNIMARC records)</para>
+	    </listitem>
+	  </itemizedlist>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-encoding</command></term>
+	<listitem>
+	  <para>Create output using the given character encoding. Use Java encoding names such as UTF8 and ISO8859_1.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-xsl</command>&#xA0;<replaceable>stylesheet</replaceable></term>
+	<listitem>
+	  <para>Process the XML data source through the XSLT stylesheet located at the given URL. The stylesheet should produce well-formed MARCXML data.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>The following command simply converts the given file with MARCXML data to MARC in ISO 2709 format and writes output to the "standard" output stream:</para>
+    <screen>
+<command>java org.marc4j.util.XmlMarcDriver input.xml</command>
+    </screen>
+    <para>To write the result to a file, add a file name and optional path:</para>
+    <screen>
+<command>java org.marc4j.util.XmlMarcDriver -out output.mrc input.xml</command>
+    </screen>
+    <para>To write UTF-8 encoded MARCXML to UTF-8 encoded MARC in ISO 2709 format:</para>
+    <screen>
+<command>java org.marc4j.util.XmlMarcDriver -encoding UTF8 
+  -out output.mrc input.xml</command>
+    </screen>
+    <para>To convert MARCXML data encoded in UTF-8 to MARC-8 ANSEL add the <command>-convert</command> argument with the <replaceable>MARC8</replaceable> encoding value:</para>
+    <screen>
+<command>java org.marc4j.util.XmlMarcDriver -convert MARC8 
+  -out output.mrc input.xml</command>
+    </screen>
+    <para>This command converts a file containing MODS data using the XSLT stylesheet provided by the Library of Congress to MARC in ISO 2709 format. The UTF-8 data is converted to MARC-8 ANSEL:</para>
+    <screen>
+<command>java org.marc4j.util.XmlMarcDriver -convert MARC8
+  -xsl http://www.loc.gov/standards/marcxml/xslt/MODS2MARC21slim.xsl
+  -out output.mrc input.xml</command>
+    </screen>
+  </sect1>
+  <sect1 id="lucene.driver">
+    <title>Indexing MARC with Lucene</title>
+    <para>The MARC4J Lucene API provides a command-line utility called <classname>MarcIndexDriver</classname> to populate a Lucene index with MARC data. Make sure to add <classname>lucene-core-2.0.0.jar</classname>, <classname>marc4j-lucene.jar</classname>, <classname>marc4j.jar</classname> and <classname>commons-logging-1.1.jar</classname> to your CLASSPATH environment variable. The <classname>marc4j-lucene.jar</classname> and <classname>commons-logging-1.1.jar</classname> packages are included in the download for the MARC4J Lucene API.</para> 
+    <para>The <classname>org.marc4j.lucene.util.MarcIndexDriver</classname> requires an input file containing MARC records. In addition the class takes zero or more of the following options:</para>
+    <variablelist>
+      <varlistentry>
+	<term><command>-usage</command></term>
+	<listitem>
+	  <para>Show the usage text.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-index</command>&#xA0;<replaceable>index-directory</replaceable></term>
+	<listitem>
+	  <para>Specify the name of the directory containing the Lucene index. If this argument is not present an in-memory index is created. On exit this index will be destroyed.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-create</command></term>
+	<listitem>
+	  <para>Create a Lucene index at the given index directory or overwrite the existing one.</para>
+	  <warning>
+	    <para>This option will overwrite any existing index with a new one.</para>
+	  </warning>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><command>-schema</command>&#xA0;<replaceable>schema URL</replaceable></term>
+	<listitem>
+	  <para>Use the Lucene index schema located at the given URL. The schema document should conform to the MARC4J Indexing Schema DTD (see: <xref linkend="indexing.schema.dtd"/>). It is generated from a RELAX NG Schema. If this argument is not present the default index schema will be used. The default index schema is based on the MARC 21 to Dublin Core crosswalk.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <figure id="indexing.schema.dtd">
+      <title>Indexing Schema</title>
+      <programlisting>
+<![CDATA[<?xml encoding="UTF-8"?>
+
+<!ELEMENT document (field)+>
+
+<!ELEMENT field (record|(leader?,(controlfield|datafield)*))>
+
+<!ATTLIST field
+  name CDATA #REQUIRED
+  index (no|tokenized|untokenized) #REQUIRED
+  store (compress|yes|no) #REQUIRED>
+
+<!ELEMENT record EMPTY>
+
+<!ELEMENT leader EMPTY>
+
+<!ATTLIST leader
+  start CDATA #REQUIRED
+  end CDATA #IMPLIED>
+
+<!ELEMENT controlfield EMPTY>
+
+<!ATTLIST controlfield
+  tag CDATA #REQUIRED
+  start CDATA #IMPLIED
+  end CDATA #IMPLIED>
+
+<!ELEMENT datafield (subfield)+>
+
+<!ATTLIST datafield
+  tag CDATA #REQUIRED>
+
+<!ELEMENT subfield (#PCDATA)>]]>
+      </programlisting>
+<!--
+      <programlisting>
+document = element document { field+ }
+field =
+  element field {
+    attlist.field,
+    (record
+     | (leader?, (controlfield | datafield)*))
+  }
+attlist.field &amp;=
+  attribute name { text },
+  attribute index { "no" | "tokenized" | "untokenized" },
+  attribute store { "compress" | "yes" | "no" }
+record = element record { empty }
+leader = element leader { attlist.leader, empty }
+attlist.leader &amp;=
+  attribute start { text },
+  attribute end { text }?
+controlfield = element controlfield { attlist.controlfield, empty }
+attlist.controlfield &amp;=
+  attribute tag { text },
+  attribute start { text }?,
+  attribute end { text }?
+datafield = element datafield { attlist.datafield, subfield+ }
+attlist.datafield &amp;= attribute tag { text }
+subfield = element subfield { text }
+start = document
+      </programlisting>
+-->
+    </figure>
+    <para>The following command simply creates an in-memory index and indexes the MARC records in <filename>input.mrc</filename> using the default index schema:</para>
+    <screen>
+<command>java org.marc4j.lucene.util.MarcIndexDriver input.mrc</command>
+    </screen>
+    <para>To create a new index on the file system, or overwrite an existing one, and add the MARC records in <filename>input.mrc</filename> using the default index schema:</para>
+    <screen>
+<command>java org.marc4j.lucene.util.MarcIndexDriver 
+  -index /Users/bpeters/Documents/workspace/sru/index 
+  -create input.mrc</command>
+    </screen>
+    <para>To add the MARC records in <filename>input.mrc</filename> to an existing index using the default index schema:</para>
+    <screen>
+<command>java org.marc4j.lucene.util.MarcIndexDriver 
+  -index /Users/bpeters/Documents/workspace/sru/index input.mrc</command>
+    </screen>
+    <para>This command adds the MARC records in <filename>input.mrc</filename> to an existing index using the given index schema:</para>
+    <screen>
+<command>java org.marc4j.lucene.util.MarcIndexDriver 
+  -index /Users/bpeters/Documents/workspace/sru/index 
+  -schema file:///Users/bpeters/Documents/workspace/sru/schema.xml 
+  input.mrc</command>
+    </screen>
+  </sect1>
+</appendix>

@@ -1,0 +1,427 @@
+<chapter id="ch02">
+  <title>Writing Data</title>
+  <sect1>
+    <title>Writing MARC Data</title>
+    <para>MARC4J provides a <classname>MarcWriter</classname><indexterm><primary>MarcWriter interface</primary></indexterm> interface to write MARC data to an output stream. This interface provides two important methods:</para>
+    <variablelist>
+      <varlistentry>
+	<term><methodname>write(Record record)</methodname><indexterm><primary>write() method</primary></indexterm></term>
+	<listitem>
+	  <para>Writes a single <classname>Record</classname> to the output stream.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>close()</methodname><indexterm><primary>close() method</primary></indexterm></term>
+	<listitem>
+	  <para>Closes the writer.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>The MARC4J library provides two implementations of <classname>MarcWriter</classname>:</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>MarcStreamWriter</classname><indexterm><primary>MarcStreamWriter class</primary></indexterm></term>
+	<listitem>
+	  <para>Writes MARC data in ISO 2709 format.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary></indexterm></term>
+	<listitem>
+	  <para>Writes MARC data in MARCXML format.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Let's start with writing records in ISO 2709<indexterm><primary>ISO 2709</primary><secondary>writing records in</secondary></indexterm> format. To do this we first need to instantiate a <classname>MarcStreamWriter</classname><indexterm><primary>MarcStreamWriter class</primary></indexterm>:</para>
+    <programlisting>
+MarcWriter writer = new MarcStreamWriter(System.out);
+    </programlisting>
+    <para>The constructor takes a subclass of <classname>OutputStream</classname> as an argument. You can use <classname>FileOutputStream</classname> to write the output to a file:</para>
+    <programlisting>
+OutputStream out = new FileOutputStream("output.mrc");
+MarcWriter writer = new MarcStreamWriter(out);
+    </programlisting>
+    <para>You can first create a <classname>File</classname> object and use that to create an instance of <classname>FileOutputStream</classname>:</para>
+    <?hard-pagebreak?>
+    <programlisting>
+File file = new File("output.mrc");
+OutputStream out = new FileOutputStream(file);
+MarcWriter writer = new MarcStreamWriter(out);
+    </programlisting>
+    <para>To append the output to an existing file, add a boolean argument to the <classname>FileOutputStream</classname> constructor with the value <parameter>true</parameter>:</para>
+    <programlisting>
+File file = new File("output.mrc");
+OutputStream out = new FileOutputStream(file, true);
+MarcWriter writer = new MarcStreamWriter(out);
+    </programlisting>
+    <para>This can be useful if you want to write records from a number of input files to a single output file.</para>
+    <para>Let's look at a complete program. <xref linkend="write.example"/> updates <xref linkend="first.example"/> to read the record for <emphasis>Summerland</emphasis> in ISO 2709 format and write the same record in ISO 2709 format to standard output.</para>
+    <example id="write.example">
+      <title>Write MARC in ISO 2709 Format</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcStreamWriter;
+import org.marc4j.MarcWriter;
+import org.marc4j.marc.Record;
+
+public class WriteMarcExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("summerland.mrc");
+
+        MarcReader reader = new MarcStreamReader(input);
+	MarcWriter writer = new MarcStreamWriter(System.out);
+	while (reader.hasNext()) {
+            Record record = reader.next();
+            writer.write(record);
+        }
+        writer.close();
+    }
+}
+      </programlisting>
+    </example>
+    <warning>
+      <para>Make sure that you always close the <classname>MarcWriter</classname> using the <methodname>close()</methodname><indexterm><primary>close() method</primary></indexterm> method.</para>
+    </warning>
+  </sect1>
+  <sect1>
+    <title>Writing MARCXML Data</title>
+    <para>Instead of using <classname>MarcStreamWriter</classname><indexterm><primary>MarcStreamWriter class</primary></indexterm>, you can use <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary></indexterm> to write records in MARCXML<indexterm><primary>MARCXML</primary></indexterm> format. To do this, you can instantiate a <classname>MarcXmlWriter</classname> using an instance of an <classname>OutputStream</classname> subclass:</para>
+    <programlisting>
+MarcWriter writer = new MarcXmlWriter(System.out);
+    </programlisting>
+    <para>You can set indent to <varname>true</varname> to format the XML output:</para>
+    <programlisting>
+MarcWriter writer = new MarcXmlWriter(System.out, true);
+    </programlisting>
+    <para><xref linkend="marcxml.example"/> reads the record for <emphasis>Summerland</emphasis> in ISO 2709 format and writes the same record in MARCXML<indexterm><primary>MARCXML</primary><secondary>writing records in</secondary></indexterm> format to standard output.</para>
+    <example id="marcxml.example">
+      <title>Write MARC in MARCXML Format</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcWriter;
+import org.marc4j.MarcXmlWriter;
+import org.marc4j.marc.Record;
+
+public class WriteMarcXmlExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("summerland.mrc");
+
+	MarcReader reader = new MarcStreamReader(input);
+	MarcWriter writer = new MarcXmlWriter(System.out, true);
+
+	while (reader.hasNext()) {
+	    Record record = reader.next();
+	    writer.write(record);
+        }
+        writer.close();
+    }
+}
+      </programlisting>
+    </example>
+    <para>You can also write MARCXML data to MARC in ISO 2709 format by using an instance of <classname>MarcXmlReader</classname><indexterm><primary>MarcXmlReader class</primary></indexterm> to read MARCXML data and a <classname>MarcStreamWriter</classname><indexterm><primary>MarcStreamWriter</primary></indexterm> instance to write MARC data in ISO 2709 format.</para>
+    <para>The load time to create a <classname>MarcStreamWriter</classname> or <classname>MarcXmlWriter</classname> is not high, so you can create an instance to write a single record, for example to output a <classname>Record</classname> object that was created from scratch:</para>
+    <programlisting>
+MarcFactory factory = MarcFactory.newInstance();
+	
+Record record = factory.newRecord("00000cam a2200000 a 4500");
+	
+record.addVariableField(factory.newControlField("001", "12883376"));
+	
+DataField dataField = factory.newDataField("245", '1', '0');
+dataField.addSubfield(factory.newSubfield('a', "Summerland /"));
+dataField.addSubfield(factory.newSubfield('c', "Michael Chabon."));
+record.addVariableField(dataField);
+
+MarcWriter writer = new MarcStreamWriter(System.out);
+writer.write(record);
+writer.close();</programlisting>
+  </sect1>
+  <sect1>
+    <title>Performing Character Conversions</title>
+    <para>When serializing <classname>Record</classname> objects you can perform character conversions<indexterm><primary>character conversion</primary></indexterm>. This feature is important when converting MARC data between ISO 2709 and MARCXML formats. Most MARC formats use specific character sets and MARC4J is able to convert some of them to UCS/Unicode and back. Converters are available for the following character encodings:</para>
+    <variablelist>
+      <varlistentry>
+	<term>MARC-8</term>
+	<listitem>
+	  <para>Character encoding used by MARC 21 records.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>ISO 5426</term>
+	<listitem>
+	  <para>Character encoding used by UNIMARC records</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>ISO 6937</term>
+	<listitem>
+	  <para>Character encoding used by UNIMARC records</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Using the converters is not difficult, but there are some things to remember. As already stated in <xref linkend="ch01"/>, MARC4J<indexterm><primary>MARC4J</primary><secondary>and ISO 2709</secondary></indexterm> reads and writes ISO 2709 records as binary data, but data elements in control fields and subfields are converted to <classname>String</classname> values. When Java converts a byte array to a <classname>String</classname> it needs a character encoding. Java can use a default character encoding, but this might not always be the right encoding to use. Therefore both <classname>MarcReader</classname><indexterm><primary>MarcReader interface</primary><secondary>and character encoding</secondary></indexterm> and <classname>MarWriter</classname><indexterm><primary>MarcWriter interface</primary><secondary>and character encoding</secondary></indexterm> implementations provide you with the ability to set a character encoding when constructing a new instance. The following list summarizes how both <classname>MarcReader</classname> and <classname>MarcWriter</classname> implementations handle character encodings:</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>MarcStreamReader</classname></term>
+	<listitem>
+	  <para>By default uses ISO 8859-1 (Latin 1) as 8-bit character set alternative, since encodings like MARC-8 are not supported by Java. In case of MARC 21 data, <classname>MarcStreamReader</classname> tries to detect the encoding from the <classname>Leader</classname> by reading the character coding scheme in the leader using the <methodname>getCharCodingScheme()</methodname> method. You can override the value when instantiating a <classname>MarcStreamReader</classname>:</para>
+	  <programlisting>
+MarcReader reader = new MarcStreamReader(input, "UTF8");
+	  </programlisting>
+	  <para>Please note that <classname>MarcStreamReader</classname> expects a Java encoding name.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>MarcXmlReader</classname></term>
+	<listitem>
+	  <para>By default relies on the underlying XML parser implementation. Normally you would provide the encoding in the XML declaration of the input file:</para>
+	  <programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>]]>
+	  </programlisting>
+	  <para>You can set the character encoding using an <classname>InputSource</classname>, for example:</para>
+	  <programlisting>
+InputStream in = new FileInputStream("summerland.xml");
+InputSource is = new InputSource(in);
+is.setEncoding("ISO-8859-1");
+MarcReader = new MarcXmlReader(is);
+	  </programlisting>
+	  <para>The <classname>InputSource</classname> uses standard Internet encoding names, rather than Java encoding names. Use for example UTF-8 in stead of UTF8 and ISO-8859-1 instead of ISO8859_1.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>MarcStreamWriter</classname></term>
+	<listitem>
+	  <para>By default uses ISO 8859-1 (Latin 1) as 8-bit character set alternative, since encodings like MARC-8 are not supported by Java. You can override the value when instantiating a <classname>MarcStreamWriter</classname>:</para>
+	  <programlisting>
+MarcWriter writer = new MarcStreamWriter(output, "UTF8");
+	  </programlisting>
+	  <para>Please note that <classname>MarcStreamWriter</classname> expects a Java encoding name.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>MarcXmlWriter</classname></term>
+	<listitem>
+	  <para>By default uses UTF-8. You can override the value when instantiating a <classname>MarcXmlWriter</classname>:</para>
+	  <programlisting>
+MarcWriter writer = new MarcXmlWriter(output, "UTF8");
+	  </programlisting>
+	  <para>Please note that <classname>MarcXmlWriter</classname> expects a Java encoding name. For the encoding in the XML declaration MARC4J relies on the underlying parser.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Check the Java supported encodings<indexterm><primary>Java</primary><secondary>supported encodings</secondary></indexterm> for the canonical name to use for a specific encoding. You can find more information in the documentation for the Java 2 Standard Edition. Look for Internationalization in the Guide to Features section.</para>
+    <para>Let's look at some character conversion examples<indexterm><primary>character conversion</primary><secondary>examples</secondary></indexterm>. <xref linkend="conversion.example"/> reads ISO 2709 records using the default encoding and writes the records in ISO 2709 format performing a MARC-8 to UCS/Unicode conversion. The class <classname>AnselToUnicode</classname><indexterm><primary>AnselToUnicode class</primary></indexterm> is used to perform the character conversion. This class uses the MARC-8 to Unicode XML mapping file published by the Library of Congress to convert between MARC-8 and UCS/Unicode. The code for the converter was contributed to the MARC4J project by Corey Keith at the time he was working for the Network Development and MARC Standards Office at the Library of Congress.</para>
+    <example id="conversion.example">
+      <title>Convert MARC-8 to UCS/Unicode</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import org.marc4j.converter.impl.AnselToUnicode;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcStreamWriter;
+import org.marc4j.MarcWriter;
+import org.marc4j.marc.Record;
+
+public class Marc8ToUnicodeExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("summerland.mrc");
+
+        MarcReader reader = new MarcStreamReader(input);
+	MarcWriter writer = new MarcStreamWriter(System.out, "UTF8");
+
+        AnselToUnicode converter = new AnselToUnicode();
+        writer.setConverter(converter);
+
+	while (reader.hasNext()) {
+            Record record = reader.next();
+            writer.write(record);
+        }
+        writer.close();
+    }
+}</programlisting>
+    </example> 
+    <para>Since <classname>MarcStreamWriter</classname><indexterm><primary>MarcStreamWriter class</primary></indexterm> uses the Latin-1 character encoding by default, the writer is instantiated with the UTF-8 character encoding. When converting MARC records to UTF-8 the leader value for the character coding scheme should also be updated. This is not done by the <classname>MarcStreamWriter</classname> class. You can set the value while iterating over the <classname>Record</classname> objects:</para>
+    <programlisting>
+while (reader.hasNext()) {
+    Record record = reader.next();
+
+    Leader leader = record.getLeader();
+    leader.setCharCodingScheme('a');
+
+    writer.write(record);
+}
+    </programlisting>
+    <para><xref linkend="marcxml.conversion.example"/> converts ISO 2709 records encoded in MARC-8<indexterm><primary>MARC-8</primary></indexterm> to MARCXML<indexterm><primary>MARCXML</primary></indexterm> encoded in UCS/Unicode<indexterm><primary>UCS/Unicode</primary></indexterm>.</para>
+    <example id="marcxml.conversion.example">
+      <title>Convert MARC to MARCXML</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import java.io.OutputStream;
+import java.io.FileOutputStream;
+
+import org.marc4j.converter.impl.AnselToUnicode;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcStreamWriter;
+import org.marc4j.MarcWriter;
+import org.marc4j.marc.Record;
+import org.marc4j.marc.Leader;
+
+public class MarcToMarcXmlExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("summerland.mrc");
+
+        OutputStream out = new FileOutputStream("summerland.xml");
+
+        MarcReader reader = new MarcStreamReader(input);
+	MarcWriter writer = new MarcXmlWriter(out, true);
+
+        AnselToUnicode converter = new AnselToUnicode();
+        writer.setConverter(converter);
+
+	while (reader.hasNext()) {
+            Record record = reader.next();
+
+            Leader leader = record.getLeader();
+            leader.setCharCodingScheme('a');
+
+            writer.write(record);
+        }
+        writer.close();
+    }
+}
+      </programlisting>
+    </example>
+    <para>To convert UCS/Unicode back to MARC-8, for example to convert MARCXML back to ISO 2709, you can use the <classname>UnicodeToAnsel</classname><indexterm><primary>UnicodeToAnsel class</primary></indexterm> class.</para>
+    <para>In addition to using a character converter, you can perform Unicode normalization<indexterm><primary>Unicode</primary><secondary>normalization</secondary></indexterm>. This is not done by the MARC-8 to UCS/Unicode converter. With Unicode normalization text is transformed into the canonical composed or precomposed form. For example "a´bc" is normalized to "ábc". To perform normalization set Unicode normalization to true:</para>
+    <programlisting>
+MarcXmlWriter writer = new MarcXmlWriter(out, true);
+
+AnselToUnicode converter = new AnselToUnicode();
+writer.setConverter(converter);
+
+writer.setUnicodeNormalization(true);
+    </programlisting>
+    <warning>
+      <para>Please note that it is not guaranteed to work if you try to convert normalized Unicode back to MARC-8 with <classname>UnicodeToAnsel</classname>. The <classname>UnicodeToAnsel</classname> class can only handle non-precomposed Unicode characters.</para>
+    </warning>
+  </sect1>
+  <?hard-pagebreak?>
+  <sect1>
+    <title>Writing MODS Data</title>
+    <para>In <xref linkend="ch01"/> we have seen that you can use a stylesheet to pre-process the input that is given to the <classname>MarcXmlReader</classname>. With <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary><secondary>post-processing with XSLT</secondary></indexterm> you can post-process the MARCXML<indexterm><primary>MARCXML</primary></indexterm> result using an XSLT stylesheet. <xref linkend="write.mods.example"/> converts MARC to MARCXML and transforms the result tree to MODS<indexterm><primary>MODS</primary></indexterm> using the stylesheet provided by the Library of Congress. To do this, you need to add the stylesheet location as an argument when you create the <classname>MarcXmlWriter</classname> instance. <xref linkend="write.mods.example"/> uses an implementation of the <classname>Result</classname><indexterm><primary>Result interface</primary></indexterm> interface to hold the output data:</para> 
+    <programlisting>
+Result result = new StreamResult(System.out);
+    </programlisting>
+    <para>The <classname>Result</classname> interface is part of the JAXP<indexterm><primary>JAXP</primary></indexterm> API. This API is covered in more detail in <xref linkend="ch03"/>.</para>
+    <example id="write.mods.example">
+      <title>Write MODS Data</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileOutputStream;
+
+import javax.xml.transform.Result;
+import javax.xml.transform.stream.StreamResult;
+
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcXmlWriter;
+import org.marc4j.converter.impl.AnselToUnicode;
+import org.marc4j.marc.Record;
+
+public class Marc2ModsExample {
+
+    public static void main(String args[]) throws Exception {
+
+        String stylesheetUrl = 
+          "http://www.loc.gov/standards/mods/v3/MARC21slim2MODS3.xsl";
+
+	Result result = new StreamResult(System.out);
+
+	InputStream input = new FileInputStream("summerland.mrc");
+
+        MarcReader reader = new MarcStreamReader(input);
+
+	MarcXmlWriter writer = new MarcXmlWriter(result, stylesheetUri);
+	writer.setConverter(new AnselToUnicode());
+
+	while (reader.hasNext()) {
+            Record record = (Record) reader.next();
+            writer.write(record);
+        }
+        writer.close();
+    }
+}
+      </programlisting>
+    </example>
+    <para>In addition to the stylesheet which transforms MARCXML<indexterm><primary>MARCXML</primary></indexterm> data to MODS<indexterm><primary>MODS</primary></indexterm>, the following stylesheets are available from the Library of Congress<indexterm><primary>Library of Congress</primary><secondary>stylesheets</secondary></indexterm> which transform MARCXML to other formats:</para>
+    <variablelist>
+      <varlistentry>
+	<term>MARCXML to RDF Encoded Simple Dublin Core Stylesheet</term>
+	<listitem>
+	  <para>Transforms MARCXML to Dublin Core using the Resource Description Framework (RDF) syntax format. RDF is a language for describing resources in the World Wide Web.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MARCXML to OAI Encoded Simple Dublin Core Stylesheet</term>
+	<listitem>
+	  <para>Transforms MARCXML to Dublin Core using the Open Archives Initiative (OAI) syntax format. This syntax is intended for use in the Open Archives Initiative Protocol for Metadata Harvesting.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MARCXML to SRW Encoded Simple Dublin Core Stylesheet</term>
+	<listitem>
+	  <para>Transforms MARCXML to Dublin Core using the Search/Retrieve Web Service (SRW) syntax format. SRW is a standard search protocol for Internet search queries. This syntax is intended for use in a searchRetrieve response.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MARCXML to MARC DTD Stylesheet</term>
+	<listitem>
+	  <para>Transforms MARCXML to XML conforming to the MARC DTD syntax.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MARC Tagged View</term>
+	<listitem>
+	  <para>Transforms MARCXML to HTML to provide a MARC tagged display.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <?hard-pagebreak?>
+    <variablelist>
+      <varlistentry>
+	<term>English Tagged View</term>
+	<listitem>
+	  <para>Transforms MARCXML to HTML to provide a labelled display.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>MARC Bibliographic Validator</term>
+	<listitem>
+	  <para>Validates MARCXML against the MARC bibliographic format.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>You can find the stylesheets at the Tools &amp; Utilities section of the MARCXML standards page. In <xref linkend="ch03"/> we take a closer look at MARC4J in XML environments.</para>
+  </sect1>
+</chapter>

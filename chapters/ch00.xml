@@ -1,0 +1,137 @@
+<preface id="marc4j.preface">
+  <title>Preface</title>
+  <para>This concise book is for library programmers who want to learn to use MARC4J to process MARC (Machine Readable Cataloging) data. MARC4J is an open source software library for working with MARC records in Java&#x2122;, a popular platform independent programming language. The MARC format was originally designed to enable the exchange of bibliographic data between computer systems by providing a structure and format for the storage of bibliographic records on half-inch magnetic tape. Though today most records are transferred by other media, the exchange format has not changed since its first release in 1967 and is still widely used worldwide. At the same time, there is a growing interest in the use of XML in libraries, mainly because the web is moving towards a platform- and application-independent interface for information services, with XML as its universal data format.</para> 
+    <para>MARC4J is designed to bridge the gap between MARC and XML. The software library has built-in support for reading and writing MARC and MARCXML data, thus providing a programming environment for crosswalking: take records in one bibliographic format as input and output these records in a different format. MARC4J also provides a pipeline to enable MARC records to go through further transformations using XSLT to convert MARC records to MODS (Metadata Object Description Schema), Dublin Core or any other bibliographic format. This feature is particularly useful since there is currently no agreed-upon standard for XML in library applications.</para>
+    <para>Although MARC4J can be used as a command-line tool for conversions between MARC and XML, its main goal is to provide an Application Programming Interface (API) to develop any kind of Java program or servlet that involves reading or writing MARC data. The core piece is a MARC reader that hides the complexity of the MARC record by providing a simple interface to extract information from MARC records. Support for XML is implemented using the standard Java XML interfaces as specified in Sun's Java API for XML Processing (JAXP). By limiting itself to the JAXP API, MARC4J is XML processor-independent and easy to integrate in applications that build on industry standards such as SAX (Simple API for XML), DOM (Document Object Model) or XSLT.</para>
+  <sect1>
+    <title>What You Should Already Know</title>
+    <para>This book assumes that you are interested in developing Java applications that involve MARC data or one of the MARC related XML standards like MARCXML or MODS. You have a basic understanding of a MARC format like MARC 21 or UNIMARC and are familiar with the basics of XML and related standards like XML Namespaces and XSLT. Working with MARC4J does not require exceptional skills in Java programming. The API is designed to be easy to learn and easy to use and this book provides numerous examples. If you have no experience with the Java programming language at all, you should start with getting familiar with the basic concepts of the language. The Tutorials and Online Training section on the Sun Developer Network (SDN) provides some good introductory tutorials on the Java programming language.</para>
+  </sect1>
+  <sect1>
+    <title>Organization of This Book</title>
+    <variablelist>
+      <para>This book is divided into the following chapters:</para>
+      <varlistentry>
+	<term>Chapter 1, <emphasis>Reading Data</emphasis></term>
+	<listitem>
+	  <para>Chapter 1 provides a short introduction about MARC formats and then focuses on reading MARC and MARCXML data. This chapter also explains how to create and update records and how to pre-process the input to convert MODS to MARC.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Chapter 2, <emphasis>Writing Data</emphasis></term>
+	<listitem>
+	  <para>Chapter 2 concentrates on the details of writing MARC and MARCXML data and how to post-process the output to convert MARC to MODS.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Chapter 3, <emphasis>MARC4J and JAXP</emphasis></term>
+	<listitem>
+	  <para>Chapter 3 explores integration with some important Java XML API's including JAXP, SAX and DOM. It demonstrates how to write the result to a DOM document, how to format XML output using a dedicated XML serializer, how to build pipelines using XSLT and how to use the SAX interface as an alternative to XSLT.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Chapter 4, <emphasis>Indexing with Lucene</emphasis></term>
+	<listitem>
+	  <para>Chapter 4 concentrates on indexing and searching MARC data with Apache Lucene using the MARC4J Lucene API.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Chapter 5, <emphasis>Putting It All Together</emphasis></term>
+	<listitem>
+	  <para>Chapter 5 focuses on building an SRU Search/Retrieve web application using the various MARC4J interfaces and classes to process MARC data and using Lucene for indexing and searching.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Appendix A, <emphasis>MARC4J API Summary</emphasis></term>
+	<listitem>
+	  <para>Appendix A provides a summary of the core MARC4J interfaces and classes.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Appendix B, <emphasis>Command-line Reference</emphasis></term>
+	<listitem>
+	  <para>Appendix B documents the command-line programs included in the MARC4J API.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </sect1>
+  <?hard-pagebreak?>
+  <sect1>
+    <title>Conventions Used in This Book</title>
+    <para>The following conventions are used in this book.</para>   
+    <sect2>
+      <title>Typographic Conventions</title>      
+      <variablelist>       
+	<varlistentry>
+	  <term><methodname>method()</methodname></term>
+	  <listitem>
+	    <para>Used for method names.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><classname>class, interface or package</classname></term>
+	  <listitem>
+	    <para>Used for names identifying classes, interfaces and packages.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><emphasis>element, attribute</emphasis></term>
+	  <listitem>
+	    <para>Used for XML mark-up.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><command>command</command></term>
+	  <listitem>
+	    <para>Used for commands.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><replaceable>parameter</replaceable></term>
+	  <listitem>
+	    <para>Used for replaceable items in code and text.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term><filename>file</filename></term>
+	  <listitem>
+	    <para>Used for file and directory names.</para>
+	  </listitem>
+	</varlistentry>        
+      </variablelist>
+    </sect2>
+    <sect2>
+      <title>Icons</title>
+      <note>
+	<para>This icon designates a note relating to the surrounding text.</para>
+      </note>
+      <tip>
+	<para>This icon designates a helpful tip relating to the surrounding text.</para>
+      </tip>
+      <warning>
+	<para>This icon designates a warning relating to the surrounding text.</para>
+      </warning>
+    </sect2>
+  </sect1>
+  <?hard-pagebreak?>
+  <sect1>
+    <title>Getting the Software</title>
+    <para>You can download a MARC4J distribution at <ulink url="http://marc4j.tigris.org">http://marc4j.tigris.org</ulink>. On the project home page you can find a direct link to the latest release. You can also find links to MARC4J distributions on the Documents &amp; Files page. A link to this page can be found in the Project Tools menu. The latest version at the time of this writing was MARC4J 2.3.1. The download includes Javadoc documentation, source code and two JAR files: <filename>marc4j.jar</filename> and <filename>normalizer.jar</filename>. Add both files to your CLASSPATH environment variable.</para>
+    <note> 
+      <para>Starting from release 2.0, MARC4J was completely rebuilt. The 2.0 and later releases are not compatible with older versions of MARC4J. The event based parser in the older versions is replaced by an easier to use interface that uses a simple iterator over a collection of MARC records.</para> 
+    </note>
+    <para>MARC4J requires Java 2 Standard Edition (J2SE) 1.4 or later because it requires the <classname>java.util.regex</classname> package to provide support for regular expressions. Some classes contained in this package are used by the <methodname>find()</methodname> methods introduced in MARC4J version 2.1. The J2SE distribution already contains the JAXP and SAX2 compliant XML parser and XSLT processor required by MARC4J, but you can use a different implementation.</para>
+  </sect1>
+  <sect1>
+    <title>Getting Examples from This Book</title>
+    <para>Most of the examples from chapter 1, 2 and 3 are available in the package <classname>org.marc4j.samples</classname> of the MARC4J distribution. Look in the <filename>src</filename> directory in the distribution for the Java source code. The SRU Search/Retrieve web application from chapter 5 is available for download from the Documents &amp; Files section of the MARC4J project site (http://marc4j.tigris.org).</para>
+  </sect1>
+  <sect1>
+    <title>Acknowledgments</title>
+    <para>The first published version of MARC4J was released in February 2002 as James (Java MARC Events). The name of the library changed to MARC4J when the project was accepted by Tigris.org, an open source community for Software Engineering Tools hosted by Collabnet. Originally the library provided an event based parser like the SAX (Simple API for XML) interface, but for release 2.0 the parser was rewritten to provide an easier to use interface.</para>
+    <?hard-pagebreak?>
+    <para>A problem with open source software is that you do not exactly know who your users are. I received questions and bug fixes from developers from all over the world. Although MARC has been declared dead several times, this shows that the standard is still used in many countries. At the same time a growing number of libraries are migrating their bibliographic data to other environments to transform their call-number lookup systems into 21st century resource discovery systems. MARC4J has proved to be a helpful tool in these environments.</para> 
+    <para>I'd like to thank all the contributors who helped me to improve MARC4J. I haven't been involved in library programming in recent years, but I am still committed to continue development of MARC4J, although it is sometimes difficult to find time.</para>
+    <para>This book contains many references to the Library of Congress, the agency that maintains most of the standards implemented by MARC4J, but neither this book nor the MARC4J software is by any means affiliated with this institution.</para>
+  </sect1>
+</preface>

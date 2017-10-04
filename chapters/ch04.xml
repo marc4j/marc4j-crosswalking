@@ -1,0 +1,411 @@
+<chapter id="ch04">
+  <title>Indexing with Lucene</title>
+    <sect1>
+      <title>Introduction</title>
+      <para>In this chapter we add text indexing and searching to a MARC4J application using Apache Lucene<indexterm><primary>Lucene</primary></indexterm>. Lucene is a high-performance text search engine library written in Java. Like MARC4J, Lucene is a low-level API, but in order to start using it, you only need to know how to use a few of its classes. MARC4J provides a <classname>MarcWriter</classname><indexterm><primary>MarcWriter interface</primary></indexterm> implementation called <classname>MarcIndexWriter</classname><indexterm><primary>MarcIndexWriter class</primary></indexterm> to create a Lucene index from <classname>Record</classname><indexterm><primary>Record interface</primary></indexterm> objects,  making indexing MARC data a breeze. When you create an index using <classname>MarcIndexWriter</classname>, you add documents to an index using the <methodname>write(Record)</methodname><indexterm><primary>write() method</primary></indexterm> method specified in the <classname>MarcWriter</classname> interface.</para>
+    </sect1>
+    <sect1>
+      <title>Installation</title>
+      <para>To use Lucene with MARC4J, you need to download a binary release of Lucene and a library containing the <classname>MarcIndexWriter</classname>. This package is not bundled with MARC4J, but you can find it at the Documents &amp; Files section of the MARC4J project at <ulink url="http://marc4j.tigris.org">http://marc4j.tigris.org</ulink>. Look for <emphasis>marc4j-lucene-0.1.zip</emphasis> or <emphasis>marc4j-lucene-0.1.tar.gz</emphasis>. You can download a binary release of Lucene at the website for the Apache Lucene project. The MARC4J Lucene library uses Lucene version 2.0.0, so make sure you download this version or a later release. Add <classname>lucene-core-2.0.0.jar</classname>, <classname>marc4j-lucene.jar</classname>, <classname>marc4j.jar</classname> and <classname>commons-logging-1.1.jar</classname> to your CLASSPATH environment variable. The <classname>marc4j-lucene.jar</classname> and <classname>commons-logging-1.1.jar</classname> packages are included in the download for the MARC4J Lucene API.</para>
+    </sect1>
+    <sect1>
+      <title>Index Configuration</title>
+      <para>The core classes for indexing text with Lucene are <classname>IndexWriter</classname>, <classname>Directory</classname>, <classname>Analyzer</classname>, <classname>Document</classname>, and <classname>Field</classname>. <classname>IndexWriter</classname> is used to create a new index and to add <classname>Documents</classname> to an existing index. Before text is indexed, it is passed through an <classname>Analyzer</classname> when the field is flagged as tokenized. Analyzers extract tokens out of text to be indexed, and ignore the rest. Lucene comes with a number of <classname>Analyzer</classname> implementations, including analyzers for different languages. The examples in this book all use the <classname>StandardAnalyzer</classname>. It is considered the most generally useful analyzer. By default this class uses an English stop-word list that can be overridden when creating an instance. <classname>StandardAnalyzer</classname> provides a sophisticated lexical analyzer that keeps together tokens like e-mail adresses, host names or words with an interior apostrophe.</para>
+      <para>An index consists of a collection of documents, and each document consists of one or more fields. Each field has a name and a value. A field <emphasis>title</emphasis> can for example hold the title proper. Fields are repeatable, so you can have multiple fields with the same name. The <classname>Directory</classname> class is an abstract class that represents the location of a Lucene index. Lucene provides a number of <classname>Directory</classname><indexterm><primary>Directory interface</primary></indexterm> implementations, including <classname>FSDirectory</classname><indexterm><primary>FSDirectory class</primary></indexterm>, to store an index in a directory on the file system and <classname>RAMDirectory</classname><indexterm><primary>RAMDirectory class</primary></indexterm> to hold a fast in-memory index.</para>
+      <para>To enable <classname>MarcIndexWriter</classname> to index your MARC records, you need to provide a configuration file with information about the way your MARC data should be indexed by Lucene. If you do not provide a configuration file, <classname>MarcIndexWriter</classname><indexterm><primary>MarcIndexWriter</primary><secondary>default index configuration</secondary></indexterm> will use the one that is included in the library. The default configuration is based on the MARC 21 to Dublin Core crosswalk. <xref linkend="default.table"/> provides a mapping of the fields and the data elements that are indexed.</para>
+    <table id="default.table">
+      <title>Default Indexing Schema</title>
+      <tgroup align="left" cols="2">
+	<colspec colnum="1" colname="col1" colwidth="1*"/>
+	<colspec colnum="2" colname="col2" colwidth="3*"/>
+	<thead>
+	  <row>
+	    <entry>Lucene Field</entry>
+	    <entry>MARC Data Elements</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><varname>dc.type</varname></entry>
+	    <entry>Leader character position 6 and tag 655 subfield code a.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.format</varname></entry>
+	    <entry>Tag 856 subfield code q.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.language</varname></entry>
+	    <entry>Tag 008 character positions 35-37.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.creator</varname></entry>
+	    <entry>Tags 100, 110, 111, 700, 710, 711, 720.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.title</varname></entry>
+	    <entry>Tag 245.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.publisher</varname></entry>
+	    <entry>Tag 260 subfield code a and b.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.date</varname></entry>
+	    <entry>Tag 260 subfield code c.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.description</varname></entry>
+	    <entry>Tags 500, 504, 505, 520, 521.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.subject</varname></entry>
+	    <entry>Tags 600, 610, 611, 630, 650, 653.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.coverage</varname></entry>
+	    <entry>Tag 651.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.relation</varname></entry>
+	    <entry>Tags 530, 760, 762, 765, 767, 770, 772-777, 780, 785-787.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.identifier</varname></entry>
+	    <entry>Tag 020 subfield code a and tag 856 subfield code u.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.rights</varname></entry>
+	    <entry>Tag 506 subfield code s, tag 540 subfield code a.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>controlnumber</varname></entry>
+	    <entry>Tag 001.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>record</varname></entry>
+	    <entry>Contains the ISO 2709 data as a compressed byte stream.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+    <para>The examples in this chapter are taken from this schema. Creating a configuration file<indexterm><primary>MarcIndexWriter</primary><secondary>creating an index configuration file</secondary></indexterm> is simple. We start with the basic XML document:</para>
+    <?hard-pagebreak?>
+    <programlisting>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE document PUBLIC "-//MARC4J//DTD Indexing Schema//EN"
+    "http://marc4j.org/dtd/indexing-schema.dtd">
+<document>
+  <!-- add fields here -->
+</document>]]>
+    </programlisting>
+    <para>It is important to include the reference to the XML DTD (Document Type Definition) to declare that the configuration document conforms to the MARC4J Indexing Schema DTD. The <classname>MarcIndexWriter</classname> instance validates the XML configuration against this schema and an error will be thrown if the program is unable to locate it. The <classname>MarcIndexWriter</classname> class uses the declaration as a key to find the schema file in the resource bundle. As you can see the root element is <emphasis>document</emphasis>, corresponding to a document in Lucene. The next step is to add an index field to the configuration document:</para>
+      <programlisting>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE document PUBLIC "-//MARC4J//DTD Indexing Schema//EN"
+    "http://marc4j.org/dtd/indexing-schema.dtd">
+<document>
+  <field name="controlnumber" index="untokenized" store="yes">
+    <controlfield tag="001"/>
+  </field>
+</document>]]>
+      </programlisting>
+      <para>This document has a single field named <emphasis>controlnumber</emphasis> containing the control number (tag 001) as a value. The control number is added as an untokenized value to the index. This means that it is not tokenized by an analyzer. The control number is stored so it can be used as a reference to the MARC record.</para>
+      <para>In this example the whole control field value is added, but it is also possible to specify a data element at particular character positions. The following field element specifies a field <emphasis>dc.language</emphasis> with the MARC language code taken from character positions 35-37 of the fixed-length data elements (tag 008).</para>
+      <?hard-pagebreak?>
+      <programlisting>
+<![CDATA[<field name="dc.language" index="untokenized" store="no">
+  <controlfield tag="008" start="35" end="37"/>
+</field>]]>
+      </programlisting>
+      <para>As shown in the <emphasis>controlnumber</emphasis> field, the <emphasis>start</emphasis> and <emphasis>end</emphasis> attributes are not required. You can use the <emphasis>start</emphasis> attribute without an <emphasis>end</emphasis> attribute to  specify a single character data element. Leader values are added in a similar way using a <emphasis>leader</emphasis> element. The following listing  adds a field <emphasis>dc.type</emphasis> containing the leader value for the type of record:</para>
+      <programlisting>
+<![CDATA[<field name="dc.type" index="untokenized" store="no">
+  <leader start="6"/>
+</field>]]>
+      </programlisting>
+      <para>You can add an <emphasis>end</emphasis> attribute for leader values consisting of more than one character, although it might not be very useful.</para>
+      <para>A text index would not be of much use without data fields containing the actual bibliographic information. The following <emphasis>field</emphasis> element specifies a <emphasis>dc.title</emphasis> field with the title and remainder of title subfields:</para>
+      <programlisting>
+<![CDATA[<field name="dc.title" index="tokenized" store="no">
+  <datafield tag="245">
+    <subfield>a</subfield>
+    <subfield>b</subfield>
+  </datafield>
+</field>]]>
+      </programlisting>
+      <para>The title and remainder of title subfields are added as tokenized values. This means that the data elements are passed through the <classname>StandardAnalyzer</classname> before text is added to the index.</para>
+      <para>You are not required to add a separate <emphasis>subfield</emphasis> element for each subfield code. The following short notation is also valid:</para>
+      <programlisting>
+<![CDATA[<field name="dc.title" index="tokenized" store="no">
+  <datafield tag="245">
+    <subfield>ab</subfield>
+  </datafield>
+</field>]]>
+      </programlisting>
+      <para>A single index field can contain multiple data elements. To create a field named <emphasis>dc.subject</emphasis> containing subject access fields, you can do the following:</para>
+      <programlisting>
+<![CDATA[<field name="dc.subject" index="tokenized" store="no">
+  <datafield tag="600">
+    <subfield>abcdefghjklmnopqrstu4vxyz</subfield>
+  </datafield>
+  <datafield tag="610">
+    <subfield>abcdefghklmnoprstu4vxyz</subfield>
+  </datafield>
+  <datafield tag="611">
+    <subfield>acdefghklnpqstu4vxyz</subfield>
+   </datafield>
+  <datafield tag="630">
+    <subfield>adfghklmnoprstvxyz</subfield>
+  </datafield>
+  <datafield tag="650">
+    <subfield>aevxyz</subfield>
+  </datafield>
+  <datafield tag="653">
+    <subfield>a</subfield>
+  </datafield>
+</field>]]></programlisting>
+      <para>You can also mix leader values, control fields and data fields within a single index field. The listing below specifies a field named <emphasis>dc.date</emphasis> with the date from the fixed-length data elements and the date of publication as values:</para>
+      <programlisting>
+<![CDATA[<field name="dc.date" index="tokenized" store="no">
+  <controlfield tag="008" start="7" end="10"/>
+  <datafield tag="260">
+    <subfield>c</subfield>
+  </datafield>
+</field>]]>
+      </programlisting>
+      <?hard-pagebreak?>
+      <para>In addition to the MARC data elements, it is possible to configure <classname>MarcIndexWriter</classname> to store the full MARC record in Lucene as a byte array:</para>
+      <programlisting>
+<![CDATA[<field name="record" index="no" store="compress">
+  <record/>
+</field>]]>
+      </programlisting>
+      <para>This adds a field named <emphasis>record</emphasis> to the document with a compressed byte stream containing the full MARC record. In this case the <emphasis>index</emphasis> attribute is ignored since it is not possible to index a binary field in Lucene.</para>
+    </sect1>
+    <sect1>
+      <title>Creating an Index</title>
+      <para><xref linkend="create.index.example"/> shows a command-line program that creates an index based on the default index configuration. It takes two arguments: the path where Lucene should create the index and the input file.</para>
+      <example id="create.index.example">
+	<title>Creating an Index</title>
+	<programlisting lang="Java">
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.IndexWriter;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.lucene.MarcIndexWriter;
+import org.marc4j.marc.Record;
+
+public class CreateIndexSample {
+
+    public static void main(String args[]) throws Exception {
+        if (args.length != 2)
+            throw new Exception("Usage: CreateIndexSample " +
+                "&lt;index&gt; &lt;input&gt;");
+
+        File indexDir = new File(args[0]);
+        File inputFile = new File(args[1]);
+
+        InputStream in = new FileInputStream(inputFile);
+
+        // create a Lucene index writer
+        Analyzer analyzer = new StandardAnalyzer();
+        IndexWriter indexWriter = new IndexWriter(indexDir,
+                analyzer, true);
+
+        // create the index writer for record objects
+        MarcIndexWriter writer = new MarcIndexWriter(indexWriter);
+
+        // read records and add them to the index
+        MarcReader reader = new MarcStreamReader(in, "UTF8");
+        while (reader.hasNext()) {
+            Record record = reader.next();
+            writer.write(record);
+        }
+        System.out.println("Documents: " + indexWriter.docCount());
+
+        // close the index writer
+        writer.close();
+    }
+
+}
+	</programlisting>
+      </example>
+     <para>The <classname>IndexWriter</classname> uses the path to the index directory as the index location. The <classname>StandardAnalyzer</classname> is used to tokenize the fields. The boolean value <parameter>true</parameter> instructs <classname>IndexWriter</classname> to create the index, or overwrite an existing one. The <classname>IndexWriter</classname> object is used by <classname>MarcIndexWriter</classname> to add documents to the index. To index data using a custom index configuration, the <classname>MarcIndexWriter</classname> class provides two additional constructors that take a byte stream or a system identifier as an argument.</para> <para><xref linkend="create.index.example"/> uses <classname>MarcStreamReader</classname> to read records from the input stream in ISO 2709 format, but you can also use <classname>MarcXmlReader</classname> to add MARCXML data to the index.</para>
+      <para>Andrzej Bialecki created a tool called Luke that provides an index browser for Lucene. It is a very helpful tool to browse the structure of a Lucene index or to perform ad-hoc queries. You can launch Luke via Java Web Start from the Luke web site. <xref linkend="luke.screenshot"/> shows the Overview tab. It displays the index name, number of fields, documents and terms. It also allows you to browse fields and terms.</para>
+      <?hard-pagebreak?>
+      <figure id="luke.screenshot">
+	<title>Luke Overview Tab</title>
+	<mediaobject>
+	  <imageobject>
+	    <imagedata scale="70" fileref="images/luke-mac.png"/> 
+	  </imageobject>
+	</mediaobject>
+      </figure>
+    </sect1>
+    <sect1>
+      <title>Searching</title>
+      <para>Now that you have created the index, you can start using it to search. <xref linkend="searching.example"/> creates an instance of <classname>IndexSearcher</classname><indexterm><primary>IndexSearcher class</primary></indexterm> using the index location provided as an argument. It then searches the index for records that have a title with value <emphasis>Summerland</emphasis>.</para>
+      <example id="searching.example">
+	<title>Searching the Index</title>
+	<programlisting>
+import java.io.File;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+
+public class SearchIndexSample {
+
+    public static void main(String args[]) throws Exception {
+        if (args.length != 1)
+            throw new Exception("Usage: SearchIndexSample &lt;index&gt;");
+
+        File indexDir = new File(args[0]);
+
+        // create a Lucene index searcher
+        Directory dir = FSDirectory.getDirectory(indexDir, false);
+        IndexSearcher searcher = new IndexSearcher(dir);
+
+        // search by title
+        Analyzer analyzer = new StandardAnalyzer();
+        QueryParser parser = new QueryParser("title", analyzer);
+        Query q = parser.parse("Summerland");
+        Hits hits = searcher.search(q);
+        System.out.println("Hits: " + hits.length());
+    }
+
+}
+	</programlisting>
+      </example>
+      <para>As you can see in the imports, searching the index does not require any MARC4J classes. All that you need to know is the location of the index that has been created using the <classname>MarcIndexWriter</classname>. It is used to create a <classname>Directory</classname><indexterm><primary>Directory interface</primary></indexterm> instance that is required to instantiate the <classname>IndexSearcher</classname> object:</para>
+    <programlisting>
+File indexDir = new File(args[0]);
+
+// create a Lucene index searcher
+Directory dir = FSDirectory.getDirectory(indexDir, false);
+IndexSearcher searcher = new IndexSearcher(dir);
+    </programlisting>
+    <para>The core classes to execute queries are <classname>TermQuery</classname>, <classname>Term</classname>, <classname>QueryParser</classname>, <classname>Query</classname><indexterm><primary>Query class</primary></indexterm> and <classname>Hits</classname><indexterm><primary>Hits class</primary></indexterm>. When searching tokenized fields, it is important to provide the same analyzer that has been used to create the index:</para>
+      <programlisting>
+Analyzer analyzer = new StandardAnalyzer();
+QueryParser parser = new QueryParser("title", analyzer);
+Query q = parser.parse("Summerland");
+Hits hits = searcher.search(q);
+      </programlisting>
+      <para>For untokenized fields, like the <emphasis>controlnumber</emphasis> field, you can add the field directly to a query:</para>
+      <programlisting>
+TermQuery q = new TermQuery(new Term("controlnumber", "11939876"));
+Hits hits = searcher.search(q);
+      </programlisting>
+      <para>Once you have an instance of <classname>Hits</classname>, you can retrieve the Lucene documents. The index is created using the default configuration. Since it stores the whole record as a byte array, you can retrieve the full MARC record in ISO 2709 format and unmarshal it to a <classname>Record</classname><indexterm><primary>Record interface</primary></indexterm> object. To do this, you first retrieve the <classname>Document</classname> instance from the <classname>Hits</classname> object:</para>
+      <programlisting>
+Document doc = hits.doc(i);
+      </programlisting>
+      <para>You can then get the binary value for the <emphasis>record</emphasis> field using the <methodname>getBinaryValue(String)</methodname> method:</para>
+      <programlisting>
+byte[] bytes = doc.getBinaryValue("record");
+      </programlisting>
+      <para>This method returns the record as a byte stream. You can unmarshal the byte stream using the <classname>RecordUtils</classname> class provided by the MARC4J Lucene library:</para>
+      <programlisting>
+Record record = RecordUtils.unmarshal(bytes);
+      </programlisting>
+      <?hard-pagebreak?>
+      <para>In <xref linkend="search.index.example"/> the retrieval of the record object is added to our search example.</para>
+      <example id="search.index.example">
+	<title>Searching the Index and Retrieving Records</title>
+	<programlisting>
+import java.io.File;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.marc4j.lucene.RecordUtils;
+import org.marc4j.marc.Record;
+
+public class SearchIndexSample {
+
+    public static void main(String args[]) throws Exception {
+        if (args.length != 2)
+            throw new Exception("Usage: SearchIndexSample " +
+                "&lt;index&gt; &lt;term&gt;");
+
+        File indexDir = new File(args[0]);
+        String queryString = args[1];
+
+        // create a Lucene index searcher
+        Directory dir = FSDirectory.getDirectory(indexDir, false);
+        IndexSearcher searcher = new IndexSearcher(dir);
+
+        // search by title
+        Analyzer analyzer = new StandardAnalyzer();
+        QueryParser parser = new QueryParser("title", analyzer);
+        Query q = parser.parse(queryString);
+        Hits hits = searcher.search(q);
+
+        for (int i = 0; i &lt; hits.length(); i++) {
+            Document doc = hits.doc(i);
+            byte[] bytes = doc.getBinaryValue("record");
+            Record record = RecordUtils.unmarshal(bytes);
+            System.out.println(record.toString());
+        }
+    }
+
+}
+	</programlisting>
+      </example>
+      <para>This program writes each record in the search result in tagged display format to standard output:</para>
+      <programlisting>
+LEADER 00714cam a2200205 a 4500
+001 12883376
+005 20030616111422.0
+008 020805s2002    nyu    j      000 1 eng
+020   $a0786808772
+020   $a0786816155 (pbk.)
+040   $aDLC$cDLC$dDLC
+100 1 $aChabon, Michael.
+245 10$aSummerland /$cMichael Chabon.
+250   $a1st ed.
+260   $aNew York :$bMiramax Books/Hyperion Books for Children,$cc2002.
+300   $a500 p. ;$c22 cm.
+520   $aEthan Feld, the worst baseball player in the history of the game,
+  finds himself recruited by a 100-year-old scout to help a band of
+  fairies triumph over an ancient enemy.
+650  1$aFantasy.
+650  1$aBaseball$vFiction.
+650  1$aMagic$vFiction.
+      </programlisting>
+      <para>The <classname>QueryParser</classname><indexterm><primary>QueryParser class</primary></indexterm> requires a default field, but you can also specify the fields in your query to specify other fields than the default field, or to search by multiple fields using boolean operators:</para>
+	<programlisting>
+// search by creator and title
+dc.creator:Chabon AND dc.title:Summerland
+
+// search by creator and title phrase
+dc.creator:Chabon AND dc.title:"Kavalier and Clay"
+
+// search by creator and title prase with nested or clause
+dc.creator:Chabon AND (dc.title:"Kavalier and Clay"
+  OR dc.title:Summerland)
+
+// search by subject using an or and not clause
+dc.subject: (Fantasy OR Magic NOT "Comic books, strips, etc.")
+	</programlisting>
+      <para>Besides the boolean operators, Lucene<indexterm><primary>Lucene</primary><secondary>query parser syntax</secondary></indexterm> supports field grouping, wild cards, fuzzy searches and proximity and range searches. Information about the query parser syntax can be found on the Query Parser page. It is available on the website of the Apache Lucene project or in the documentation included in the distribution. I can also recommend <emphasis>Lucene in Action</emphasis> by Erik Hatcher and Otis Gospodnetic&#180;.</para>
+      <para>You can use the Search tab in Luke for experimentation. Make sure to use the same analyzer that was used to create the index. In <xref  linkend="create.index.example"/> the <classname>StandardAnalyzer</classname> was used. The MARC4J Lucene API also provides a command-line utility that enables you create and update a Lucene index for MARC data. See <xref linkend="lucene.driver"/> in <xref linkend="appendixb"/> for usage. This command-line utility will be used in <xref linkend="ch05"/> to populate the index for the SRU web application.</para>
+    </sect1>
+</chapter>

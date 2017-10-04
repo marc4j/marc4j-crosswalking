@@ -1,0 +1,811 @@
+<chapter id="ch03">
+  <title>MARC4J and JAXP</title>
+  <sect1>
+    <title>JAXP Overview</title>
+    <para>The Java API for XML Processing (JAXP)<indexterm><primary>JAXP</primary></indexterm> provides an implementation independent API to process XML with Java. JAXP supports the Simple API for XML (SAX)<indexterm><primary>SAX</primary></indexterm> and Document Object Model (DOM)<indexterm><primary>DOM</primary></indexterm> to parse XML as a stream of events or to build an in-memory object representation. The library also supports XSLT<indexterm><primary>XSLT</primary></indexterm> to transform documents to other XML documents, or other text formats. JAXP 1.3 introduced additional packages, including a schema-independent Validation Framework, XPath support, support for W3C XML Schema Data Types and support for XInclude. JAXP 1.3 is part of the J2SE 1.5 release. A stand-alone implementation is available for J2SE 1.3 and 1.4. This chapter focuses on the core classes defined in the following packages:</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>javax.xml.parsers</classname></term>
+	<listitem>
+	  <para>Provides processor independent factory classes to obtain a <classname>SAXParser</classname> or <classname>DocumentBuilder</classname> from the underlying XML parser implementation.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>javax.xml.transform</classname></term>
+	<listitem>
+	  <para>Provides processor independent factory classes to obtain an XSLT processor from the underlying implementation. This package is also known as TRAX (Transformation API for XML).</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>If you do not provide a specific XML parser or XSLT processor implementation, the JAXP implementation will use the default parser that comes with your Java distribution<indexterm><primary>JAXP</primary><secondary>and implementations</secondary></indexterm>. To use a different implementation, you have to set a system property that points to the parser or processor that should override the default implementation. The easiest way to do this, is to include the system properties in a <filename>jaxp.properties</filename> file<indexterm><primary>JAXP</primary><secondary>properties</secondary></indexterm> located in the <filename>JAVA_HOME/lib</filename> directory. The Xerces<indexterm><primary>Xerces parser</primary></indexterm> parser and Xalan XSLT processor<indexterm><primary>Xalan XSLT processor</primary></indexterm> are the default implementations for J2SE 1.5<indexterm><primary>J2SE 1.5</primary><secondary>and JAXP</secondary></indexterm>, but J2SE 1.4<indexterm><primary>J2SE 1.4</primary><secondary>and JAXP</secondary></indexterm> by default uses the Crimson<indexterm><primary>Crimson parser</primary></indexterm> XML parser. To use Xerces with J2SE 1.4<indexterm><primary>Xerces</primary><secondary>using with J2SE 1.4</secondary></indexterm>, you can create a <filename>jaxp.properties</filename> file with the following properties:</para>
+      <programlisting>
+javax.xml.parsers.SAXParserFactory=
+    org.apache.xerces.jaxp.SAXParserFactoryImpl
+javax.xml.parsers.DocumentBuilderFactory=
+    org.apache.xerces.jaxp.DocumentBuilderFactoryImpl
+      </programlisting>
+      <para>You can also modify your CLASSPATH settings or set the properties at runtime:</para>
+      <?hard-pagebreak?>
+      <screen>
+java -Djavax.xml.parsers.SAXParserFactory=
+    org.apache.xerces.jaxp.SAXParserFactoryImpl XercesSerializerExample
+      </screen>
+      <para>The XML support in MARC4J<indexterm><primary>MARC4J</primary><secondary>and JAXP</secondary></indexterm> is implemented using the interfaces and classes specified in JAXP, so you should be able to use MARC4J with any JAXP compliant parser or processor.</para>
+    <para>Integration between MARC4J and XML is mainly supported through the Transformation API package. The following interfaces and classes are the most important classes to develop XML applications with MARC4J:</para>
+    <variablelist id="core.jaxp">
+      <varlistentry>
+	<term><classname>ContentHandler</classname><indexterm><primary>ContentHandler interface</primary></indexterm></term>
+	<listitem>
+	  <para>The <classname>ContentHandler</classname> interface is part of SAX (Simple API for XML). Through a <classname>ContentHandler</classname> a SAX parser reports basic document events like the start and end of elements and character data. When using a SAX based parser, you implement the <classname>ContentHandler</classname> interface to develop your XML application. This interface is used in the <classname>MarcXmlReader</classname> class to process the MARCXML input source.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>TransformerFactory</classname><indexterm><primary>TransformerFactory class</primary></indexterm></term>
+	<listitem>
+	  <para>A <classname>TransformerFactory</classname> instance can be used to create <classname>Transformer</classname> and <classname>Templates</classname> objects. A <classname>Transformer</classname> instance can be used to transform a source document into a result document using an XSLT stylesheet. A <classname>Templates</classname> object is an in-memory representation of an XSLT stylesheet that can be used to create <classname>Transformer</classname> objects without the need to read the stylesheet from the file system or the network every time a new <classname>Transformer</classname> instance is created.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>SAXTransformerFactory</classname><indexterm><primary>SAXTransformerFactory class</primary></indexterm></term>
+	<listitem>
+	  <para>This class extends <classname>TransformerFactory</classname> to provide SAX specific support. With the <classname>SAXTransformerFactory</classname> class you can create a <classname>TransformerHandler</classname> from a <classname>Source</classname> or <classname>Templates</classname> object. A <classname>TransformerHandler</classname> extends the <classname>ContentHandler</classname> interface. When passed to a <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary><secondary>and TransformerHandler</secondary></indexterm> instance, the writer will report the MARCXML SAX events to the handler to transform the MARCXML data to a different XML or text format. Instances of  <classname>TransformerHandler</classname> can be chained together to create a pipeline using the <methodname>setResult(Result)</methodname> method. </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>Source</classname><indexterm><primary>Source interface</primary></indexterm></term>
+	<listitem>
+	  <para>Implementations of this interface can act as an input source for both XML documents and XSLT stylesheets. JAXP provides three implementations: <classname>StreamSource</classname><indexterm><primary>StreamSource class</primary></indexterm> provides an input source from a file or input stream, <classname>SAXSource</classname><indexterm><primary>SAXSource class</primary></indexterm> provides an input source from SAX parser events and <classname>DOMSource</classname><indexterm><primary>DOMSource class</primary></indexterm> provides an input source from a DOM document.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>Result</classname><indexterm><primary>Result interface</primary></indexterm></term>
+	<listitem>
+	  <para>Implementations of this interface can act as a holder for a transformation result tree. JAXP provides three implementations: <classname>StreamResult</classname><indexterm><primary>StreamResult class</primary></indexterm> can be used to write the result to a file or other output stream, <classname>SAXResult</classname><indexterm><primary>SAXResult class</primary></indexterm> can be used to write the result to a <classname>ContentHandler</classname> and <classname>DOMResult</classname><indexterm><primary>DOMResult class</primary></indexterm> can be used to write the result to a DOM document.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Together these interfaces and classes provide a powerful framework to process MARC data in XML environments. In the next sections of this chapter we will look at some examples that illustrate the use of MARC4J with JAXP in XML applications.</para>
+  </sect1>
+ <sect1>
+    <title>Writing To a DOM Document</title>
+    <para>The Document Object Model (DOM) is a data structure that represents an XML document as a tree of nodes. The basic DOM interface is implemented in the <classname>org.w3c.dom</classname> package. The interfaces in this package represent elements, attributes, character data, comments, and processing instructions. All of these interfaces are sub-interfaces of the <classname>Node</classname> interface that provides basic methods to navigate the tree and to add, move, remove, copy or change nodes in the tree. The root of the tree is a <classname>Document</classname> object that represents a complete XML document.</para>
+<para>Using <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary></indexterm> you can write MARCXML to an instance of <classname>Document</classname>. The DOM document can then be used for further processing in your XML application. To do this, first create an instance of <classname>DOMResult</classname>:</para>
+    <programlisting>
+DOMResult result = new DOMResult();
+    </programlisting>
+    <para>You can then use the result to create a <classname>MarcXmlWriter</classname>:</para>
+    <programlisting>
+MarcXmlWriter writer = new MarcXmlWriter(result);
+    </programlisting>
+    <para>The writer writes the output to a DOM document that can be retrieved from the result object:</para>
+    <programlisting>
+Document doc = (Document) result.getNode();
+    </programlisting>
+    <para><xref linkend="dom.example"/> shows the complete code. It reads the record for <emphasis>Summerland</emphasis> in ISO 2709 format and writes the record as MARCXML to a DOM document.</para>
+    <example id="dom.example">
+      <title>Writing Output To a DOM Document</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import javax.xml.transform.dom.DOMResult;
+
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcXmlWriter;
+import org.marc4j.marc.Record;
+import org.w3c.dom.Document;
+
+public class Marc2DomExample {
+
+    public static void main(String args[]) throws Exception {
+
+	InputStream input = new FileInputStream("summerland.mrc");
+
+	MarcReader reader = new MarcStreamReader(input);
+
+	DOMResult result = new DOMResult();
+
+	MarcXmlWriter writer = new MarcXmlWriter(result);
+
+	while (reader.hasNext()) {
+            Record record = (Record) reader.next();
+            writer.write(record);
+	}
+        writer.close();
+
+        Document doc = (Document) result.getNode();
+    }
+}
+      </programlisting>
+    </example>
+    <?hard-pagebreak?>
+    <para>Writing output to a DOM document can be useful when you need to embed the result into a parent document, such as a SOAP (Simple Object Access Protocol)<indexterm><primary>SOAP</primary></indexterm> envelope:</para>
+    <programlisting>
+<![CDATA[<?xml version='1.0' ?>
+<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope">
+  <env:Body>
+    <!-- MARCXML collection -->
+  </env:Body>
+</env:Envelope>]]>
+    </programlisting>
+    <para>Let's assume that we have a <classname>Document</classname> called <varname>soapEnv</varname>. We can then use the following code to add the <classname>Document</classname> instance, that contains the MARCXML data, to the <emphasis>env:Body</emphasis> element of the SOAP envelope:</para>
+    <programlisting>
+// the object containing the MARCXML data
+Document doc = (Document) result.getNode();
+
+// import the node in the SOAP document
+Node marcxml = soapEnv.importNode(doc.getDocumentElement(), true);
+
+// get the SOAP body element
+Element soapBody = (Element)
+    soapEnv.getElementsByTagName("env:Body").item(0);
+
+// append the node containing the MARCXML data
+// to the SOAP Body element
+soapBody.appendChild(marcxml);
+    </programlisting>
+    <para>You can post-process the MARCXML<indexterm><primary>MARCXML</primary><secondary>post-processing</secondary></indexterm> data before writing the result to a DOM document using an XSLT stylesheet. The following listing transforms MARC records to MODS and writes the MODS data to a DOM document:</para>
+    <programlisting>
+String stylesheetUrl =
+    "http://www.loc.gov/standards/mods/v3/MARC21slim2MODS3.xsl";
+Source stylesheet = new StreamSource(stylesheetUrl);
+
+DOMResult result = new DOMResult();
+MarcXmlWriter writer = new MarcXmlWriter(result, stylesheet);
+
+while (reader.hasNext()) {
+    Record record = (Record) reader.next();
+    writer.write(record);
+}
+writer.close();
+
+Document doc = (Document) result.getNode();
+    </programlisting>
+  </sect1>
+  <sect1>
+    <title>Formatting Output with Xerces</title>
+    <para><xref linkend="dom.example"/> demonstrated that you can write the output of <classname>MarcXmlWriter</classname> to an implementation of the <classname>Result</classname> interface, in this case <classname>DOMResult</classname>. My favorite implementation of the <classname>Result</classname> interface is the <classname>SAXResult</classname> class. The <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary><secondary>formatting output with Xerces</secondary></indexterm> class provides very basic formatting options. If you need more advanced formatting, you can use a <classname>SAXResult</classname> to hold a <classname>ContentHandler</classname> derived from a dedicated XML serializer. <xref linkend="xerces.example"/> uses the Xerces <classname>XMLSerializer</classname><indexterm><primary>XMLSerializer class</primary></indexterm> class to write MARC records to XML. The program also converts characters from MARC-8 to UCS/Unicode and performs Unicode normalization. The <classname>XMLSerializer</classname> class provides a lot of formatting options and it knows how to handle namespaces reported by the SAX <methodname>startPrefixMapping()</methodname> and <methodname>endPrefixMapping()</methodname> events. Using the serializer is simple. The first step is to configure the output format with the serialization options you want:</para>
+    <programlisting>
+OutputFormat format = new OutputFormat("xml", "UTF-8", true);
+    </programlisting>
+    <para>The <classname>Outputformat</classname> class provides all kinds of formatting options including indentation and the maximum line length. In this case the output method is <parameter>xml</parameter>, the output encoding is <parameter>UTF-8</parameter> and indentation is set to true. The object is used to create an instance of <classname>XMLSerializer</classname>. In this example the output is written to standard output:</para>
+    <programlisting>
+XMLSerializer serializer = new XMLSerializer(System.out, format);
+    </programlisting>
+    <para>To be able to register the serializer, you need to wrap the instance in a <classname>SAXResult</classname>:</para>
+    <?hard-pagebreak?>
+    <programlisting>
+Result result = new SAXResult(serializer.asContentHandler());
+    </programlisting>
+    <para>You can then use the <classname>SAXResult</classname> to create an instance of <classname>MarcXmlWriter</classname>. <xref linkend="xerces.example"/> shows the complete code.</para>
+    <example id="xerces.example">
+      <title>Formatting Output with the Xerces Serializer</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import javax.xml.transform.Result;
+import javax.xml.transform.sax.SAXResult;
+
+import org.apache.xml.serialize.OutputFormat;
+import org.apache.xml.serialize.XMLSerializer;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcXmlWriter;
+import org.marc4j.converter.impl.AnselToUnicode;
+import org.marc4j.marc.Record;
+import org.marc4j.marc.Leader;
+
+public class XercesSerializerExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("summerland.mrc");
+
+        MarcReader reader = new MarcStreamReader(input);
+
+        // configure the output format
+	OutputFormat format = new OutputFormat("xml", "UTF-8", true);
+
+        // create the serializer
+	XMLSerializer serializer = new XMLSerializer(System.out, format);
+
+        // create the result
+	Result result = new SAXResult(serializer.asContentHandler());
+
+	MarcXmlWriter writer = new MarcXmlWriter(result);
+	writer.setConverter(new AnselToUnicode());
+	writer.setUnicodeNormalization(true);
+
+	while (reader.hasNext()) {
+            Record record = reader.next();
+
+            Leader leader = record.getLeader();
+            leader.setCharCodingScheme('a');
+
+            writer.write(record);
+        }
+        writer.close();
+
+    }
+}
+      </programlisting>
+    </example>
+    <tip>
+      <para>Since <classname>MarcXmlWriter</classname> only provides limited formatting options, it is recommended to always use a dedicated XML serializer like Xerces <classname>XMLSerializer</classname><indexterm><primary>XMLSerializer class</primary></indexterm>.</para>
+    </tip>
+  </sect1>
+  <sect1>
+    <title>Compiling Stylesheets</title>
+    <para>If you need to transform input from many files, you can instantiate <classname>MarcXmlReader</classname><indexterm><primary>MarcXmlReader class</primary><secondary>instantiating with compiled stylesheet</secondary></indexterm> with a compiled stylesheet to speed up the process. The XSLT processor will then use the in-memory stylesheet data rather than re-parse the entire stylesheet for every file. A compiled stylesheet is represented by the <classname>Templates</classname> class. The <classname>MarcXmlReader</classname> class provides a constructor that takes a <classname>TransformerHandler</classname> as an argument. A <classname>TransformerHandler</classname><indexterm><primary>TransformerHandler</primary></indexterm> listens for SAX parse events and transforms them to a <classname>Result</classname>. For each transformation we need a new instance of <classname>TransformerHandler</classname>. You can obtain the handler from a <classname>Templates</classname> object containing the in-memory stylesheet representation. To demonstrate the use of a compiled stylesheet, we create a program that reads files containing MODS<indexterm><primary>MODS</primary></indexterm> data from a given directory on the file system. For each file it transforms the MODS records to MARCXML and writes each record in tagged display format to standard output.</para>
+    <para>The first step is to create an instance of <classname>TransformerFactory</classname>:</para>
+    <programlisting>
+TransformerFactory tf = TransformerFactory.newInstance();
+    </programlisting>
+    <para>You can then create a <classname>Templates</classname> object to hold the in-memory stylesheet representation:</para>
+    <programlisting>
+Source stylesheet = new StreamSource(
+    "http://www.loc.gov/standards/marcxml/xslt/MODS2MARC21slim.xsl");
+
+Templates templates = tf.newTemplates(stylesheet);
+    </programlisting>
+    <para>To read files from the file system, a filter is used to limit the list to XML files:</para>
+    <programlisting>
+File dir = new File(inputDir);
+
+FilenameFilter filter = new FilenameFilter() {
+    public boolean accept(File dir, String name) {
+        return name.endsWith(".xml");
+    }
+};
+
+File[] files = dir.listFiles(filter);
+    </programlisting>
+    <para>To create the <classname>TransformerHandler</classname>, you first need to cast the <classname>TransformerFactory</classname> to a <classname>SAXTransformerFactory</classname>:</para>
+    <programlisting>
+SAXTransformerFactory stf = ((SAXTransformerFactory) tf);
+    </programlisting>
+    <para>You can then read files from the file list and process each file using <classname>MarcXmlReader</classname>:</para>
+    <programlisting>
+for (int i = 0; i &lt; files.length; i++) {
+
+    TransformerHandler handler = stf.newTransformerHandler(templates);
+
+    InputStream input = new FileInputStream(files[i]);
+
+    MarcReader reader = new MarcXmlReader(input, handler);
+
+    while (reader.hasNext()) {
+        Record record = reader.next();
+        System.out.println(record.toString());
+    }
+
+}
+    </programlisting>
+    <para><xref  linkend="mods.example"/> shows the complete code.</para>
+    <example id="mods.example">
+      <title>Reading MODS from Multiple Files</title>
+      <programlisting>
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
+import java.io.InputStream;
+
+import javax.xml.transform.Source;
+import javax.xml.transform.Templates;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXResult;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.sax.SAXTransformerFactory;
+import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.stream.StreamSource;
+
+import org.marc4j.MarcReader;
+import org.marc4j.MarcXmlReader;
+import org.marc4j.marc.Record;
+
+public class TemplatesExample {
+
+    public static void main(String args[]) throws Exception {
+        if (args.length != 1))
+            throw new Exception("Usage: TemplatesExample &lt;dir&gt;")
+
+        String inputDir = args[0];
+
+        TransformerFactory tf = TransformerFactory.newInstance();
+
+        if (tf.getFeature(SAXSource.FEATURE)
+                &amp;&amp; tf.getFeature(SAXResult.FEATURE)) {
+
+            // create a stylesheet source
+            Source stylesheet = new StreamSource(
+       "http://www.loc.gov/standards/marcxml/xslt/MODS2MARC21slim.xsl");
+
+            // create an in-memory stylesheet representation
+            Templates templates = tf.newTemplates(stylesheet);
+
+            File dir = new File(inputDir);
+
+            // create a filter to include only .xml files
+            FilenameFilter filter = new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return name.endsWith(".xml");
+                }
+            };
+
+            // list all files
+            File[] files = dir.listFiles(filter);
+
+            // cast the transformer handler to a sax transformer handler
+            SAXTransformerFactory stf = ((SAXTransformerFactory) tf);
+
+            // iterate over all files
+            for (int i = 0; i &lt; files.length; i++) {
+
+                // create a transformer handler from the template
+                TransformerHandler handler = stf
+                        .newTransformerHandler(templates);
+
+                // create the input stream
+                InputStream input = new FileInputStream(files[i]);
+
+                // parse the input stream and write each record
+                MarcReader reader = new MarcXmlReader(input, handler);
+                while (reader.hasNext()) {
+                    Record record = reader.next();
+                    System.out.println(record.toString());
+                }
+            }
+        }
+    }
+
+}
+      </programlisting>
+    </example>
+  </sect1>
+  <sect1>
+    <title>Chaining Stylesheets</title>
+    <para>You can chain <classname>TransformerHandler</classname><indexterm><primary>TransformerHandler</primary><secondary>chaining instances</secondary></indexterm> instances together to create a pipeline that sends the XML data through a sequence of stages. For each stylesheet in the chain a <classname>TransformerHandler</classname> is created. In <xref linkend="chain.example"/> the XML data goes through the following three stages:</para>
+    <orderedlist>
+      <listitem>
+	<para>The first handler receives SAX events from the <classname>MarcXmlWriter</classname> that converts the ISO 2709 input to MARCXML. It then transforms the MARCXML data to MODS and sends the result to the second handler.</para>
+      </listitem>
+      <listitem>
+	<para>The second handler transforms the SAX events received from the first handler back to MARCXML. Let's assume that we want to check if there is any loss of data between the transformations.</para>
+      </listitem>
+      <listitem>
+	<para>The third handler receives the MARCXML data from the second handler and writes the MARCXML data to a tagged display format in HTML using the <emphasis>MARC21slim2HTML.xsl</emphasis> stylesheet.</para>
+      </listitem>
+    </orderedlist>
+    <para>First a <classname>TransformerHandler</classname> is created for each stylesheet by obtaining an instance from the <classname>SAXTransformerFactory</classname>. The stylesheets are then chained together using the <methodname>setResult()</methodname> method so that each transformation step passes its output to the next step:</para>
+    <programlisting>
+tHandler1.setResult(new SAXResult(tHandler2));
+tHandler2.setResult(new SAXResult(tHandler3));
+    </programlisting>
+    <para>The third and final transformation step writes the result to the file <filename>output.html</filename>:</para>
+    <programlisting>
+OutputStream out = new FileOutputStream("output.html");
+tHandler3.setResult(new StreamResult(out));
+    </programlisting>
+    <para>The <classname>TransformerHandler</classname> that performs the first transformation step is wrapped in a <classname>SAXResult</classname> to create the instance of <classname>MarcXmlWriter</classname>. <xref linkend="chain.example"/> shows the complete code for the stylesheet chain program.</para>
+    <?hard-pagebreak?>
+    <example id="chain.example">
+      <title>Stylesheet Chain</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
+
+import javax.xml.transform.Result;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXResult;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.sax.SAXTransformerFactory;
+import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcWriter;
+import org.marc4j.MarcXmlWriter;
+import org.marc4j.marc.Record;
+
+public class StylesheetChainExample {
+
+    public static void main(String args[]) throws Exception {
+
+        TransformerFactory tf = TransformerFactory.newInstance();
+
+        if (tf.getFeature(SAXSource.FEATURE)
+                &amp;&amp; tf.getFeature(SAXResult.FEATURE)) {
+
+            // cast the transformer handler to a sax transformer handler
+            SAXTransformerFactory stf = ((SAXTransformerFactory) tf);
+
+            // create a TransformerHandler for each stylesheet.
+            TransformerHandler tHandler1 = stf
+                .newTransformerHandler(new StreamSource(
+      "http://www.loc.gov/standards/mods/v3/MARC21slim2MODS3.xsl"));
+
+            TransformerHandler tHandler2 = stf
+                .newTransformerHandler(new StreamSource(
+      "http://www.loc.gov/standards/marcxml/xslt/MODS2MARC21slim.xsl"));
+
+            TransformerHandler tHandler3 = stf
+                .newTransformerHandler(new StreamSource(
+      "http://www.loc.gov/standards/marcxml/xslt/MARC21slim2HTML.xsl"));
+
+            // chain the transformer handlers
+            tHandler1.setResult(new SAXResult(tHandler2));
+            tHandler2.setResult(new SAXResult(tHandler3));
+
+            // create an output stream
+            OutputStream out = new FileOutputStream("output.html");
+            tHandler3.setResult(new StreamResult(out));
+
+            // create a SAXResult with the first handler
+            Result result = new SAXResult(tHandler1);
+
+            // create the input stream
+            InputStream input = new FileInputStream("summerland.mrc");
+
+            // parse the input
+            MarcReader reader = new MarcStreamReader(input);
+            MarcWriter writer = new MarcXmlWriter(result);
+            while (reader.hasNext()) {
+                Record record = reader.next();
+                writer.write(record);
+            }
+            writer.close();
+
+            out.close();
+        }
+    }
+}
+      </programlisting>
+    </example>
+    <para>When you compile and run this program, it will write each record in tagged display format to the file <filename>output.html</filename>. <xref linkend="chain.output"/> shows the output for the <emphasis>Summerland</emphasis> record used in <xref linkend="chain.example"/>.</para>
+    <?hard-pagebreak?>
+    <figure id="chain.output">
+      <title>Stylesheet Chain Output</title>
+      <mediaobject>
+	<imageobject>
+	  <imagedata scale="70" fileref="images/output-mac.png"/> 
+	</imageobject>
+      </mediaobject>
+    </figure>
+  </sect1>
+  <sect1>
+    <title>Creating a Dublin Core Writer</title>
+    <para>If you do not want to rely on a stylesheet to post-process MARCXML into the desired XML format, you can implement your own <classname>MarcWriter</classname>. One approach to do this, is to implement a <classname>ContentHandler</classname><indexterm><primary>ContentHandler interface</primary><secondary>to produce SAX events</secondary></indexterm> that produces SAX events. You can then serialize the events to XML using a serializer that consumes the SAX events. The benefit is that your writer will be very fast and will have a low memory consumption. The disadvantage of this approach is that it requires some low level SAX programming. Using a <classname>ContentHandler</classname> to create XML is not difficult, but it can be a challenge to create code that is nice and clean. These are the methods a <classname>ContentHandler</classname><indexterm><primary>ContentHandler interface</primary><secondary>method overview</secondary></indexterm> provides:</para>
+    <?hard-pagebreak?>
+    <variablelist>
+      <varlistentry>
+	<term><methodname>characters(char[] ch, int start, int length)</methodname></term>
+	<listitem>
+	  <para>Receive notification of character data.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>endDocument()</methodname></term>
+	<listitem>
+	  <para>Receive notification of the end of a document.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>endElement(String uri, String localName, String qName)</methodname></term>
+	<listitem>
+	  <para>Receive notification of the end of an element.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>endPrefixMapping(String prefix)</methodname></term>
+	<listitem>
+	  <para>End the scope of a prefix-URI mapping.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>ignorableWhitespace(char[] ch, int start, int length)</methodname></term>
+	<listitem>
+	  <para>Receive notification of ignorable whitespace in element content.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>processingInstruction(String target, String data)</methodname></term>
+	<listitem>
+	  <para>Receive notification of a processing instruction.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>setDocumentLocator(Locator locator)</methodname></term>
+	<listitem>
+	  <para>Receive an object for locating the origin of SAX document events.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>skippedEntity(String name)</methodname></term>
+	<listitem>
+	  <para>Receive notification of a skipped entity.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>startDocument()</methodname></term>
+	<listitem>
+	  <para>Receive notification of the beginning of a document.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>startElement(String uri, String localName, String qName, Attributes atts)</methodname></term>
+	<listitem>
+	  <para>Receive notification of the beginning of an element.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><methodname>startPrefixMapping(String prefix, String uri)</methodname></term>
+	<listitem>
+	  <para>Begin the scope of a prefix-URI Namespace mapping.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Although SAX was designed to read XML data, you can also use these methods to create XML. To do this you only need an implementation of <classname>ContentHandler</classname> that is able to serialize XML, like the Xerces <classname>XMLSerializer</classname><indexterm><primary>XMLSerializer class</primary></indexterm> used in <xref linkend="xerces.example"/>. <xref linkend="producer.example"/> shows a simple program that outputs a Dublin Core<indexterm><primary>Dublin Core</primary></indexterm> <emphasis>title</emphasis> element.</para>
+    <?hard-pagebreak?>
+    <example id="producer.example">
+      <title>Output Dublin Core Title Element</title>
+      <programlisting>
+import org.apache.xml.serialize.XMLSerializer;
+import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.helpers.AttributesImpl;
+
+public class SaxProducerExample {
+
+    public static final String DC_NS =
+        "http://purl.org/dc/elements/1.1/";
+
+    public static final Attributes atts = new AttributesImpl();
+
+    public static void main(String args[]) throws Exception {
+
+        // create a serializer
+        XMLSerializer serializer = new XMLSerializer(System.out, null);
+        ContentHandler ch = serializer.asContentHandler();
+
+        // start the document
+        ch.startDocument();
+        ch.startPrefixMapping("", DC_NS);
+
+        // write the title element
+        ch.startElement(DC_NS, "title", "title", atts);
+        char[] data = "Summerland".toCharArray();
+        ch.characters(data, 0, data.length);
+        ch.endElement(DC_NS, "title", "title");
+
+        // end the document
+        ch.endPrefixMapping("");
+        ch.endDocument();
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>When you compile and run this program, it will write the following XML document to standard output:</para>
+    <?hard-pagebreak?>
+    <screen>
+<![CDATA[<?xml version="1.0"?>
+<title xmlns="http://purl.org/dc/elements/1.1/">Summerland</title>]]>
+    </screen>
+    <para>You can use this approach to create a <classname>MarcWriter</classname><indexterm><primary>MarcWriter interface</primary></indexterm> implementation that reports SAX events to a <classname>ContentHandler</classname> implementation:</para>
+    <programlisting>
+public class MarcDublinCoreWriter implements MarcWriter {
+
+    private ContentHandler ch;
+
+    public MarcDublinCoreWriter(ContentHandler ch) {
+        this.ch = ch;
+        // start document
+    }
+
+    public void write(Record record) {
+        // create Dublin Core record
+    }
+
+    public void close() {
+        // end document
+    }
+
+}
+    </programlisting>
+    <para><xref  linkend="dc.writer.example"/> shows the code for a <classname>MarcWriter</classname> implementation that creates Dublin Core. It is not a full implementation of the MARC 21 to Dublin Core crosswalk: it writes the <emphasis>creator</emphasis>, <emphasis>title</emphasis> and <emphasis>subject</emphasis> elements to the <classname>ContentHandler</classname>.</para>
+    <para>The two <methodname>getDataElements()</methodname> methods are helper methods to concatenate the given subfield data elements and return the result as a character array. Since MARC is richer in data than Dublin Core, in some cases multiple MARC data elements are mapped to a single Dublin Core element. The method iterates over a character array containing subfield codes. If there is a match, the data element is added to the <classname>StringBuffer</classname> preceded by a space. The data is converted before it is returned if a registered character converter is present.</para>
+    <?hard-pagebreak?>
+    <example id="dc.writer.example">
+      <title>Dublin Core Writer</title>
+      <programlisting>
+import java.util.Iterator;
+import java.util.List;
+
+import org.marc4j.MarcException;
+import org.marc4j.MarcWriter;
+import org.marc4j.converter.CharConverter;
+import org.marc4j.marc.DataField;
+import org.marc4j.marc.Record;
+import org.marc4j.marc.Subfield;
+import org.xml.sax.Attributes;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.AttributesImpl;
+
+public class DublinCoreWriter implements MarcWriter {
+
+    public static final String RDF_NS =
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+
+    public static final String DC_NS =
+        "http://purl.org/dc/elements/1.1/";
+
+    public static final Attributes atts = new AttributesImpl();
+
+    private ContentHandler ch;
+
+    private CharConverter converter = null;
+
+    public DublinCoreWriter(ContentHandler ch) {
+        this.ch = ch;
+        try {
+            ch.startDocument();
+            ch.startPrefixMapping("rdf", RDF_NS);
+            ch.startPrefixMapping("dc", DC_NS);
+            ch.startElement(RDF_NS, "Description", "rdf:Description",
+                atts);
+        } catch (SAXException e) {
+            throw new MarcException(e.getMessage(), e);
+        }
+    }
+
+    public void close() {
+        try {
+            ch.endElement(RDF_NS, "Description", "rdf:Description");
+            ch.endPrefixMapping("dc");
+            ch.endPrefixMapping("rdf");
+            ch.endDocument();
+        } catch (SAXException e) {
+            throw new MarcException(e.getMessage(), e);
+        }
+
+    }
+
+    public CharConverter getConverter() {
+        return converter;
+    }
+
+    public void setConverter(CharConverter converter) {
+        this.converter = converter;
+    }
+
+    public void write(Record record) {
+        DataField field;
+        char[] data;
+
+        try {
+            field = (DataField) record.getVariableField("100");
+            if (field != null) {
+                data = getDataElements(field);
+                ch.startElement(DC_NS, "creator", "dc:creator", atts);
+                ch.characters(data, 0, data.length);
+                ch.endElement(DC_NS, "creator", "dc:creator");
+            }
+
+            field = (DataField) record.getVariableField("245");
+            if (field != null) {
+                data = getDataElements(field, "abfghk");
+                ch.startElement(DC_NS, "title", "dc:title", atts);
+                ch.characters(data, 0, data.length);
+                ch.endElement(DC_NS, "title", "dc:title");
+            }
+
+            String[] subjects = { "600", "610", "611", "630", "650" };
+            List list = record.getVariableFields(subjects);
+            Iterator i = list.iterator();
+            while (i.hasNext()) {
+                field = (DataField) i.next();
+                data = getDataElements(field);
+                ch.startElement(DC_NS, "subject", "dc:subject", atts);
+                ch.characters(data, 0, data.length);
+                ch.endElement(DC_NS, "subject", "dc:subject");
+            }
+
+        } catch (SAXException e) {
+            throw new MarcException(e.getMessage(), e);
+        }
+
+    }
+
+    private char[] getDataElements(DataField field) {
+        return getDataElements(field, null);
+    }
+
+    private char[] getDataElements(DataField field, String codeString) {
+        StringBuffer sb = new StringBuffer();
+
+        char[] codes = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+
+        if (codeString != null)
+            codes = codeString.toCharArray();
+
+        for (int i = 0; i &lt; codes.length; i++) {
+            Subfield sf = field.getSubfield(codes[i]);
+            if (sf != null) {
+                if (i > 1)
+                    sb.append(" ");
+                sb.append(sf.getData());
+            }
+        }
+        if (converter == null)
+            return sb.toString().toCharArray();
+        else {
+            String data = converter.convert(sb.toString());
+            return data.toCharArray();
+        }
+    }
+
+}
+      </programlisting>
+    </example>
+    <para><xref linkend="dc.driver.example"/> provides a driver to demonstrate the use of <classname>DublinCoreWriter</classname> in a program. It reads the record for <emphasis>Summerland</emphasis> and writes the record as a Dublin Core document to standard output using the Xerces<indexterm><primary>Xerces</primary></indexterm> <classname>XMLSerializer</classname><indexterm><primary>XMLSerializer class</primary></indexterm>.</para>
+    <example id="dc.driver.example">
+      <title>Driver for DublinCoreWriter</title>
+      <programlisting>
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import org.apache.xml.serialize.OutputFormat;
+import org.apache.xml.serialize.XMLSerializer;
+import org.marc4j.MarcReader;
+import org.marc4j.MarcStreamReader;
+import org.marc4j.MarcWriter;
+import org.marc4j.marc.Record;
+import org.xml.sax.ContentHandler;
+
+public class DublinCoreWriterExample {
+
+    public static void main(String args[]) throws Exception {
+
+        InputStream input = new FileInputStream("summerland.mrc");
+
+        MarcReader reader = new MarcStreamReader(in);
+
+        OutputFormat format = new OutputFormat("xml", "UTF-8", true);
+        XMLSerializer serializer = new XMLSerializer(System.out, format);
+        ContentHandler ch = serializer.asContentHandler();
+
+        MarcWriter writer = new DublinCoreWriter(ch);
+        while (reader.hasNext()) {
+            Record record = (Record) reader.next();
+            writer.write(record);
+        }
+        writer.close();
+
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>When you compile and run this program, it will write the following document to standard output:</para>
+      <screen>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<rdf:Description
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:creator>Chabon, Michael.</dc:creator>
+  <dc:title>Summerland /</dc:title>
+  <dc:subject>Fantasy.</dc:subject>
+  <dc:subject>Baseball Fiction.</dc:subject>
+  <dc:subject>Magic Fiction.</dc:subject>
+</rdf:Description>]]>
+      </screen>
+      <para>Implementing a <classname>MarcWriter</classname> to serialize <classname>Record</classname> objects to XML requires some low level SAX programming, but if you have high performance demands and require low memory consumption, you might want to consider this approach.</para>
+  </sect1>
+</chapter>

@@ -1,0 +1,1105 @@
+<chapter id="ch05">
+  <title>Putting It All Together</title>
+  <sect1>
+    <title>Introduction</title>
+    <para>In this chapter we develop a web application that implements a basic SRU Search/Retrieve operation<indexterm><primary>SRU</primary></indexterm>. SRU (Search and Retrieve via URL) is a standard search protocol for Internet search queries. SRU is an XML oriented protocol that allows a user to search a remote database of records. It uses the Common Query Language (CQL) as a query language and allows servers to return results marked up in different XML vocabularies such as Dublin Core, MARCXML or MODS. The design builds on the experience gained with the Z39.50 information retrieval protocol, but it uses common Internet standards making it easy to understand and easy to implement.</para>
+    <para>It is not possible to implement a complete SRU server in a single chapter. The standard is considered simple, but it is not that simple. The goal of this chapter is to demonstrate how you can use MARC4J in your applications. The <classname>MarcIndexWriter</classname><indexterm><primary>MarcIndexWriter class</primary></indexterm> will be used to create the initial index containing indexed MARC<indexterm><primary>MARC</primary></indexterm> records. The MARC4J API will then be used to serialize results from Lucene<indexterm><primary>Lucene</primary></indexterm> to the desired XML output format. Our program will not have a user interface. The user simply submits a URL based search request to the server, the server will parse the query to create a Lucene query. Results are returned to the user in an XML encoded response. Although there are several excellent frameworks available to create Java web applications, such as the Spring Framework<indexterm><primary>Spring Framework</primary></indexterm>, we will use a simple application model based on the <emphasis>Front Controller</emphasis><indexterm><primary>Front Controller pattern</primary></indexterm> pattern as specified in Martin Fowlers book <emphasis>Patterns of Enterprise Application Architecture</emphasis>.</para>
+    <para>For the previous chapters no specific Java IDE (Integrated Development Environment) was required, but for this chapter it is strongly recommended to use an IDE such as Eclipse<indexterm><primary>Eclipse IDE</primary></indexterm> or IntelliJ IDEA<indexterm><primary>IntelliJ IDE</primary></indexterm>. Since Eclipse is a free IDE, the examples are based on Eclipse, but if you are an experienced developer, don't hesitate to use the IDE of your choice. To build and deploy the application, the Eclipse Ant integration is used. Apache Ant is a build tool written in Java. The application is deployed to the Apache Tomcat<indexterm><primary>Apache Tomcat</primary></indexterm> servlet container, but the Search/Retrieve application will also work in other servlet containers.</para>
+  </sect1>
+  <sect1>
+    <title>Setting Up the Environment</title>
+    <para>If you do not have a copy of Apache Tomcat installed, you can download it at the Apache Tomcat web site. You can find the installation instructions under the Documentation section. After installation you can test if Tomcat is running by pointing the browser to <emphasis>http://localhost:8080</emphasis>. If the software was successfully installed you should see the Apache Tomcat welcome page.</para>
+    <warning>
+      <para>You must have the <envar>CATALINA_HOME</envar> environment variable set in order to be able to deploy the Search/Retrieve application. The <filename>build.xml</filename> file depends on some Apache Tomcat libraries.</para>
+    </warning>
+    <para>Now that we have a target environment, we need to set up a project for development. We need to create the project structure, add the required libraries, configure logging, create a build file, configure some Tomcat tasks and finally create the project in Eclipse. First create the folder structure shown in <xref linkend="folder.structure"/>.</para>
+    <figure id="folder.structure">
+      <title>Project Folder Structure</title>
+      <programlisting>
+sru
+ |
+ |--build
+ |
+ |--src
+ |
+ |--web
+     |
+     |--WEB-INF
+     |
+     |--classes
+     |
+     |--lib
+      </programlisting>
+    </figure>
+    <para>The <filename>sru</filename> folder is the project root folder containing all the project resources. The <filename>src</filename> directory is for the Java source code, the <filename>build</filename> directory is the output directory and the <filename>web</filename> directory contains the resources that are needed by the servlet container. The <filename>web</filename> directory has a <filename>WEB-INF</filename> sub directory that is required by Java web applications. It contains two sub directories: the <filename>classes</filename> directory contains classes we want to deploy and the <filename>lib</filename> directory contains the third party libraries.</para>
+    <para>The Search/Retrieve web application depends on the following third party libraries:</para>
+    <variablelist>
+      <varlistentry>
+	<term><classname>marc4j.jar</classname></term>
+	<listitem>
+	  <para>The MARC4J API.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <?hard-pagebreak?>
+    <variablelist>
+      <varlistentry>
+	<term><classname>marc4j-lucene.jar</classname></term>
+	<listitem>
+	  <para>The MARC4J Lucene API.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>cql-java.jar</classname></term>
+	<listitem>
+	  <para>This is a CQL<indexterm><primary>CQL</primary></indexterm> query parser created by Mike Taylor. It is included in the MARC4J Lucene API distribution. It is used to translate CQL query expressions to Lucene query expressions.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>lucene-core-2.0.0.jar</classname></term>
+	<listitem>
+	  <para>The Lucene library that we will use for searching the index created with the MARC4J Lucene API.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><classname>log4j-1.2.8.jar</classname></term>
+	<listitem>
+	  <para>In order to be able to debug the application we will use the Apache Log4j logging services.</para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Copy these files to the <filename>WEB-INF/lib</filename> directory. To enable logging we need to add a Log4j<indexterm><primary>Log4j</primary><secondary>configuration</secondary></indexterm> configuration. If you are familiar with Log4j, you might want to set up your own configuration, otherwise simply copy the lines from <xref linkend="log4j.configuration"/> into a file called <filename>log4j.properties</filename> and save the file in the <filename>classes</filename> directory. It contains a minimalistic configuration to enable Log4j to write log statements to standard output. In Eclipse<indexterm><primary>Eclipse IDE</primary></indexterm> these statements will be written to the Console View, in Tomcat<indexterm><primary>Apache Tomcat</primary></indexterm> they will be added to the <filename>stdout.log</filename> file located in the Apache Tomcat <filename>log</filename> directory.</para>
+    <example id="log4j.configuration">
+      <title>Basic Log4j Configuration</title>
+      <programlisting>
+# Set root logger level to DEBUG and its only appender to A1.
+log4j.rootLogger=DEBUG, A1
+
+# A1 is set to be a ConsoleAppender.
+log4j.appender.A1=org.apache.log4j.ConsoleAppender
+
+# A1 uses PatternLayout.
+log4j.appender.A1.layout=org.apache.log4j.PatternLayout
+log4j.appender.A1.layout.ConversionPattern=%-4r [%t] %-5p %c %x - %m%n
+
+log4j.rootLogger=DEBUG, A1
+log4j.appender.A1=org.apache.log4j.ConsoleAppender
+log4j.appender.A1.layout=org.apache.log4j.PatternLayout
+
+# Print the date in ISO 8601 format
+log4j.appender.A1.layout.ConversionPattern=%d [%t] %-5p %c - %m%n
+
+# use the A1 appender for our packages
+org.marc4j.sru=A1
+      </programlisting>
+    </example>
+    <para>In addition to the <filename>WEB-INF</filename> directory, the servlet engine requires a <emphasis>Web Application Deployment Descriptor</emphasis><indexterm><primary>Web Application Deployment Descriptor</primary></indexterm>. This is an XML file describing the servlets and other components that will make up the Search/Retrieve application. Create a file called <filename>web.xml</filename> in the <filename>WEB-INF</filename> directory and add the following:</para>
+    <programlisting>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/j2ee"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://
+	 java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" version="2.4">
+
+  <display-name>sru</display-name>
+
+  <!-- servlet configurations -->
+
+</web-app>]]>
+    </programlisting>
+<para>In order to build and deploy the application, we also need a build file. We use Apache Ant<indexterm><primary>Apache Ant</primary></indexterm> to execute build and deployment tasks. <xref linkend="build.file"/> shows the complete build file<indexterm><primary>Apache Ant</primary><secondary>build file</secondary></indexterm> for the <filename>sru</filename> project.</para>
+    <example id="build.file">
+      <title>The Ant Build File</title>
+      <programlisting>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<project name="sru" default="jar" basedir=".">
+
+  <property environment="env" />
+
+  <!-- get the Tomcat home directory -->
+  <property name="tomcat.home" value="${env.CATALINA_HOME}" />
+
+  <property name="tomcat.url" value="http://localhost:8080/manager"/>
+  <property name="tomcat.username" value="admin"/>
+  <property name="tomcat.password" value=""/>
+
+  <property name="project.name" value="sru"/>
+  <property name="src.dir" value="src"/>
+  <property name="web.dir" value="web"/>
+  <property name="dist.dir" value="dist"/>
+  <property name="build.dir" value="build"/>
+  <property name="webapp.name" value="sru"/>
+
+  <target name="init">
+    <tstamp />
+    <record name="build.log" loglevel="verbose" append="no" />
+  </target>
+
+  <path id="classpath">
+    <fileset dir="${web.dir}/WEB-INF/lib">
+      <include name="*.jar" />
+    </fileset>
+    <fileset dir="${tomcat.home}/common/lib">
+      <include name="servlet*.jar" />
+      <include name="mail.jar" />
+      <include name="activation.jar" />
+    </fileset>
+    <pathelement path="${build.dir}" />
+    <pathelement path="${web.dir}/WEB-INF/classes" />
+  </path>
+
+  <target name="prepare" depends="init">
+    <mkdir dir="${build.dir}" />
+  </target>
+
+  <target name="compile" depends="prepare">
+    <javac srcdir="${src.dir}" destdir="${build.dir}">
+      <classpath refid="classpath" />
+    </javac>
+    <copy todir="${build.dir}">
+      <fileset dir="${src.dir}">
+	<include name="**/*.properties" />
+	<include name="**/*.xml" />
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="jar" depends="compile">
+    <jar jarfile="${project.name}.jar">
+      <fileset dir="${build.dir}">
+	<include name="**/*.class" />
+	<include name="**/*.properties" />
+	<include name="**/*.xml" />
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="war" depends="compile">
+    <mkdir dir="${dist.dir}" />
+    <war destfile="${dist.dir}/${webapp.name}.war"
+	 webxml="${web.dir}/WEB-INF/web.xml">
+      <classes dir="${build.dir}" />
+      <fileset dir="${web.dir}">
+	<include name="**/*.*" />
+	<exclude name="**/web.xml" />
+      </fileset>
+    </war>
+  </target>
+
+  <target name="deploy" depends="compile">
+    <copy todir="${tomcat.home}/webapps/${webapp.name}"
+	  preservelastmodified="true">
+      <fileset dir="${web.dir}">
+	<include name="**/*.*"/>
+      </fileset>
+    </copy>
+    <copy todir="${tomcat.home}/webapps/${webapp.name}/WEB-INF/classes"
+	  preservelastmodified="true">
+      <fileset dir="${build.dir}" />
+    </copy>
+  </target>
+
+  <target name="clean" depends="init">
+    <delete dir="${dist.dir}" />
+    <delete dir="${build.dir}" />
+  </target>
+
+  <!-- tomcat ant tasks -->
+  <taskdef file="tomcatTasks.properties">
+    <classpath>
+      <pathelement path="${tomcat.home}/server/lib/catalina-ant.jar" />
+    </classpath>
+  </taskdef>
+
+  <target name="install" depends="war">
+    <deploy url="${tomcat.url}"
+	    username="${tomcat.username}"
+	    password="${tomcat.password}"
+	    path="/${webapp.name}"
+	    war="file:${dist.dir}/${webapp.name}.war" />
+  </target>
+
+  <target name="remove">
+    <undeploy url="${tomcat.url}"
+	      username="${tomcat.username}"
+	      password="${tomcat.password}"
+	      path="/${webapp.name}" />
+  </target>
+
+  <target name="reload" depends="deploy">
+    <reload url="${tomcat.url}"
+	    username="${tomcat.username}"
+	    password="${tomcat.password}"
+	    path="/${webapp.name}" />
+  </target>
+
+  <target name="start">
+    <start url="${tomcat.url}"
+	   username="${tomcat.username}"
+	   password="${tomcat.password}"
+	   path="/${webapp.name}" />
+  </target>
+
+  <target name="stop">
+    <stop url="${tomcat.url}"
+	  username="${tomcat.username}"
+	  password="${tomcat.password}"
+	  path="/${webapp.name}" />
+  </target>
+
+  <target name="list">
+    <list url="${tomcat.url}"
+	  username="${tomcat.username}"
+	  password="${tomcat.password}" />
+  </target>
+
+</project>]]>
+      </programlisting>
+    </example>
+    <para>Copy these lines into a file called <filename>build.xml</filename> and save the file in the project root folder (this is the <filename>sru</filename> folder).</para>
+    <para>To run the Apache Tomcat tasks like <emphasis>deploy</emphasis>, <emphasis>undeploy</emphasis> and <emphasis>reload</emphasis>, we need to configure the classes that implement these tasks. To do this, create a file called <filename>tomcatTasks.properties</filename> in the same directory as <filename>build.xml</filename> and add the following lines:</para>
+    <programlisting>
+deploy=org.apache.catalina.ant.DeployTask
+undeploy=org.apache.catalina.ant.UndeployTask
+remove=org.apache.catalina.ant.RemoveTask
+reload=org.apache.catalina.ant.ReloadTask
+start=org.apache.catalina.ant.StartTask
+stop=org.apache.catalina.ant.StopTask
+list=org.apache.catalina.ant.ListTask
+    </programlisting>
+    <para>The final task, before starting development, is to configure the project in the Eclipse IDE<indexterm><primary>Eclipse IDE</primary><secondary>create Java project</secondary></indexterm>. To do this follow these steps:</para>
+    <variablelist>
+      <varlistentry>
+	<term><emphasis>Start the New Project wizard</emphasis></term>
+	<listitem>
+	  <para>Start Eclipse and select File, New and then Project. Eclipse will show the New Project wizard. </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Add the project root folder</emphasis></term>
+	<listitem>
+	  <para>Select Java Project and click Next. Eclipse will show the New Java Project wizard. Type <replaceable>sru</replaceable> in the Project name input box and then select the Create project from existing source option. Use the Browse button to navigate to the <filename>sru</filename> project root directory and click Next to enter the Java settings.</para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Add the build path</emphasis></term>
+      <listitem>
+	<para>In the Java settings window, right click on the <filename>src</filename> folder and select the Use as Source Folder option to add the <filename>src</filename> folder to the build path. To add the default output location use the Browse button to select the <filename>build</filename> folder.</para>
+      </listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Verify if the libraries are added to the CLASSPATH</emphasis></term>
+      <listitem>
+	<para>Click on the Libraries tab to verify if the libraries from the <filename>lib</filename> folder are listed. If this is not the case you can add them using the Add JARs... button.</para>
+      </listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Add the <filename>classes</filename> folder</emphasis></term>
+      <listitem>
+	<para>Click the Add Class Folder... and navigate to the <filename>WEB-INF</filename> folder. Select the <filename>classes</filename> folder and click OK to add the folder. We need to add the <filename>classes</filename> folder to enable Log4j to find the log appenders.</para>
+      </listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Add the Apache Tomcat libraries</emphasis></term>
+      <listitem>
+	<para>We also need some Apache Tomcat libraries. Click Add External JARs and browse on your file system to the <filename>common/lib</filename> folder in the Apache Tomcat home directory. Select the file <classname>servlet-api.jar</classname>. Repeat this last action for <classname>catalina-ant.jar</classname> located in the <filename>server/lib</filename> directory of your Apache Tomcat installation.</para>
+      </listitem>
+      </varlistentry>
+      <varlistentry>
+	<term><emphasis>Finish the New Project wizard</emphasis></term>
+      <listitem>
+	<para>Click Finish to save the settings and close the wizard.</para>
+      </listitem>
+      </varlistentry>
+    </variablelist>
+    <para>Our project is now added to Eclipse. It should look similar to <xref linkend="eclipse.project"/>:</para>
+    <figure id="eclipse.project">
+      <title>SRU Project in Eclipse</title>
+      <mediaobject>
+	<imageobject>
+	  <imagedata scale="70" fileref="images/project-mac.png"/> 
+	</imageobject>
+      </mediaobject>
+    </figure>
+    <para>Both the development and deployment environments are now fully configured to start developing the Search/Retrieve application.</para>
+  </sect1>
+  <sect1>
+    <title>Implementing the Controller</title>
+    <para>The Search/Retrieve application is a web application. It needs to be able to handle HTTP requests from a client such as a browser. It is possible to write a servlet that handles the requests for the Search/Retrieve operation, but since it might be required to implement additional operations in the near future, it is recommended to avoid creating a servlet for each operation. It would introduce all kinds of duplicate behavior across our servlets, such as exception handling when someone requests an operation that is not supported. To avoid this, a single class is created that implements the common behavior to handle all operations, including the Search/Retrieve operation. <xref linkend="controller.example"/> shows the code for this class.</para>
+     <example id="controller.example">
+      <title>The Controller Class</title>
+      <programlisting>
+package org.marc4j.sru;
+
+import java.io.IOException;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class Controller extends HttpServlet {
+
+    private static final String PACKAGE_NAME = "org.marc4j.sru";
+
+    protected ServletContext context;
+
+    public void init(ServletConfig config) throws ServletException {
+        context = config.getServletContext();
+    }
+
+    public void doGet(HttpServletRequest request,
+            HttpServletResponse response)
+            throws IOException, ServletException {
+        Operation operation = getOperation(request);
+        operation.init(context, request, response);
+        operation.execute();
+    }
+
+    public void doPost(HttpServletRequest request,
+            HttpServletResponse response)
+            throws IOException, ServletException {
+        doGet(request, response);
+    }
+
+    private Operation getOperation(HttpServletRequest request) {
+        Operation operation = null;
+        try {
+            final String actionClassName = PACKAGE_NAME + "."
+                    + request.getParameter("operation") + "Operation";
+
+            operation = (Operation) Class.forName(actionClassName)
+                    .newInstance();
+        } catch (Exception e) {
+            operation = new UnsupportedOperation();
+        }
+        return operation;
+    }
+
+    public void destroy() {
+        context = null;
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>This class extends the <classname>HttpServlet</classname><indexterm><primary>HttpServlet class</primary></indexterm> class. It requires each request to provide a parameter <emphasis>operation</emphasis>, representing the SRU operation<indexterm><primary>SRU</primary><secondary>operations</secondary></indexterm> name, like SearchRetrieve, Explain or Scan. These are operations an SRU server should provide. Based on the <emphasis>operation</emphasis> request parameter, the controller tries to instantiate the operation by calling the <methodname>getOperation()</methodname> method. If there is no match, an <classname>UnsupportedOperation</classname> is instantiated. The controller then initializes the <classname>Operation</classname> instance with the <classname>ServletContext</classname>, the <classname>HttpServletRequest</classname> and <classname>HttpServletResponse</classname> objects. Each operation needs to implement the abstract method <methodname>execute()</methodname>. This method contains the logic specific to the operation. The <classname>Operation</classname> class also implements a <methodname>forward()</methodname> method to forward the request to a view. <xref linkend="operation.example"/> shows the abstract <classname>Operation</classname> class.</para>
+    <example id="operation.example">
+      <title>The Base Operation Class</title>
+    <programlisting>
+package org.marc4j.sru;
+
+import java.io.IOException;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public abstract class Operation {
+
+    protected ServletContext context;
+
+    protected HttpServletRequest request;
+
+    protected HttpServletResponse response;
+
+    public void init(ServletContext context,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        this.context = context;
+        this.request = request;
+        this.response = response;
+    }
+
+    public abstract public void execute() throws ServletException,
+            IOException;
+
+    protected void forward(String target) throws ServletException,
+            IOException {
+        RequestDispatcher dispatcher =
+            context.getRequestDispatcher(target);
+        dispatcher.forward(request, response);
+    }
+
+}
+    </programlisting>
+    </example>
+    <para>To add these classes to the Search/Retrieve application, we start with adding a package to the <filename>src</filename> folder. Select the <filename>src</filename> folder and click File, New and then Package. Eclipse shows the Java Package window. For the examples in this book I used <classname>org.marc4j.sru</classname>, but you can use a different name. Put the name of your choice in the name field and click Finish. We start with creating the <classname>Operation</classname> class, since the <classname>Controller</classname> class depends on it. To create this class, select the package we just created and then click File, New and then Class. Eclipse shows the Java Class window. Enter <classname>Operation</classname> in the name field and click Finish to create the class. Enter the code listed in <xref linkend="operation.example"/> and repeat the steps to add a class for the <classname>Controller</classname> class as listed in <xref linkend="controller.example"/>. Make sure to add the <classname>HttpServlet</classname> class in the superclass field when you create the <classname>Controller</classname> class.</para>
+    <tip>
+      <para>Eclipse can organize the imports for you. When editing a class, either right click on the class in the Package Explorer and go to Source, then Organize Imports or use the command <command>Ctrl+Shift+O</command>.</para>
+    </tip>
+    <para>On creation of the <classname>Controller</classname> class, Eclipse reports an error because it cannot locate the <classname>UnsupportedOperation</classname> class. Using an IDE like Eclipse this is easy to solve. Click on the error in the left margin, select the option Create class 'UnsupportedOperation' and click Enter. Eclipse shows the Java Class window. Click Finish to create the class and add the following lines in the body of the <methodname>execute()</methodname> method:</para>
+    <programlisting>
+request.setAttribute("code", "4");
+request.setAttribute("message", "Unsupported operation");
+
+forward("/diagnostic.jsp");
+    </programlisting>
+    <para><xref linkend="unsupported.example"/> shows the complete code for the <classname>UnsupportedOperation</classname> class.</para>
+    <example id="unsupported.example">
+      <title>The UnsupportedOperation Class.</title>
+      <programlisting>
+package org.marc4j.sru;
+
+import java.io.IOException;
+import javax.servlet.ServletException;
+
+public class UnsupportedOperation extends Operation {
+
+    public void execute() throws ServletException, IOException {
+        request.setAttribute("code", "4");
+        request.setAttribute("message", "Unsupported operation");
+
+        forward("/diagnostic.jsp");
+    }
+
+}</programlisting>
+    </example>
+    <para>When the <classname>Controller</classname> receives a request with an unsupported operation, it will instantiate the <classname>UnsupportedOperation</classname> class and call the <methodname>execute()</methodname> method. The <classname>UnsupportedOperation</classname> does not have much logic. It simply forwards the request to the <filename>diagnostic.jsp</filename> file. Create this file in the <filename>web</filename> directory and add the JSP code listed in <xref  linkend="jsp.example"/>.</para>
+    <example id="jsp.example">
+      <title>Diagnostic Record</title>
+      <programlisting>
+<![CDATA[<jsp:root xmlns:jsp="http://java.sun.com/JSP/Page" version="1.2">
+<jsp:directive.page contentType="text/xml"/>
+<jsp:output omit-xml-declaration="false"/>
+<diagnostic xmlns="http://www.loc.gov/zing/srw/diagnostic/">
+  <uri>info:srw/diagnostic/1/${requestScope.code}</uri>
+  <details>${requestScope.code}</details>
+  <message>${requestScope.message}</message>
+</diagnostic>
+</jsp:root>]]>
+      </programlisting>
+    </example>
+    <para>We now have the <classname>Controller</classname> class, the abstract <classname>Operation</classname> class and a first implementation that is able to handle requests for unsupported operations. When we deploy this web application, it will return an unsupported operation for every request, because it is the only operation currently implemented.</para>
+    <para>To enable Apache Tomcat to forward requests to the controller, we need to add a servlet mapping to the <emphasis>Web Application Deployment Descriptor</emphasis>. Add the following lines to the <filename>web.xml</filename> file located in the <filename>WEB-INF</filename> folder:</para>
+    <programlisting>
+<![CDATA[<servlet>
+  <servlet-name>Controller</servlet-name>
+  <servlet-class>
+    org.marc4j.sru.Controller
+  </servlet-class>
+  <load-on-startup>1</load-on-startup>
+</servlet>
+
+<servlet-mapping>
+  <servlet-name>Controller</servlet-name>
+  <url-pattern>/search/*</url-pattern>
+</servlet-mapping>]]></programlisting>
+    <para><xref linkend="descriptor.example"/> shows the complete <emphasis>Web Application Deployment Descriptor</emphasis><indexterm><primary>Web Application Deployment Descriptor</primary></indexterm> file.</para>
+    <example id="descriptor.example">
+      <title>The Deployment Descriptor</title>
+      <programlisting>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/j2ee"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://
+	 java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" version="2.4">
+
+  <display-name>sru</display-name>
+
+  <servlet>
+    <servlet-name>Controller</servlet-name>
+    <servlet-class>
+      org.marc4j.sru.Controller
+    </servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Controller</servlet-name>
+    <url-pattern>/search/*</url-pattern>
+  </servlet-mapping>
+
+</web-app>]]>
+      </programlisting>
+    </example>
+    <para>Since we use a front controller, this is basically all we need to configure in the <emphasis>Web Application Deployment Descriptor</emphasis>. If we had used a servlet for each operation, it would have been necessary to configure a servlet every time a new one was added to the application.</para>
+    <para>You are now ready to deploy the application. In Eclipse<indexterm><primary>Eclipse IDE</primary><secondary>adding build file</secondary></indexterm> select Window, Show View and then Ant. Eclipse opens the Ant View. Click the Add Buildfiles button and select the <filename>build.xml</filename> located in the root folder of the project. Eclipse adds the build file to the Ant View. To test the connection, select the <emphasis>list</emphasis> task and click Run the Selected Target. The Eclipse console should list the applications deployed on the Tomcat servlet container:</para>
+    <?hard-pagebreak?>
+    <screen>
+Buildfile: /Users/bpeters/Documents/workspace/sru/build.xml
+list:
+   [list] OK - Listed applications for virtual host localhost
+   [list] /admin:running:0:/usr/local/tomcat/server/webapps/admin
+   [list] /balancer:running:0:balancer
+   [list] /:running:0:/usr/local/tomcat/webapps/ROOT
+   [list] /manager:running:0:/usr/local/tomcat/server/webapps/manager
+BUILD SUCCESSFUL
+Total time: 1 second
+    </screen>
+    <para>Run the <emphasis>deploy</emphasis> task to deploy the Search/Retrieve application to Apache Tomcat. When you run the <emphasis>list</emphasis> task again, the <filename>sru</filename> application should appear in the list:</para>
+    <screen>
+Buildfile: /Users/bpeters/Documents/workspace/sru/build.xml
+list:
+   [list] OK - Listed applications for virtual host localhost
+   [list] /admin:running:0:/usr/local/tomcat/server/webapps/admin
+   [list] /balancer:running:0:balancer
+   <command>[list] /sru:running:0:/usr/local/tomcat/server/webapps/sru</command>
+   [list] /:running:0:/usr/local/tomcat/webapps/ROOT
+   [list] /manager:running:0:/usr/local/tomcat/server/webapps/manager
+BUILD SUCCESSFUL
+Total time: 1 second
+    </screen>
+    <para>To test the application, open a web browser and enter the following URL:</para>
+    <screen>
+http://localhost:8080/sru/search?operation=SearchRetrieve
+    </screen>
+    <para>The browser should display the following diagnostic message:</para>
+    <screen>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<diagnostic xmlns="http://www.loc.gov/zing/srw/diagnostic/">
+  <uri>info:srw/diagnostic/1/4</uri>
+  <details>4</details>
+  <message>Unsupported operation.</message>
+</diagnostic>]]>
+    </screen>
+  </sect1>
+  <sect1>
+    <title>Building the Index</title>
+    <para>Before we continue development, we first need to populate an Apache Lucene index. You can use the <classname>MarcIndexDriver</classname><indexterm><primary>MarcIndexDriver class</primary></indexterm> to do that. This class is a command-line program that can add records to either a new Lucene<indexterm><primary>Lucene</primary></indexterm> index or an existing one. To run the driver, the following libraries are required on the CLASSPATH environment variable:</para>
+    <simplelist>
+      <member><classname>marc4j.jar</classname></member>
+      <member><classname>lucene-core-2.0.0.jar</classname></member>
+      <member><classname>marc4j-lucene.jar</classname></member>
+      <member><classname>commons-logging-1.1.jar</classname></member>
+    </simplelist>
+    <para>You need some MARC<indexterm><primary>MARC</primary></indexterm> records, but I assume that will be no problem, since that's what this book is all about. Creating the index is very simple. Create a directory called <filename>index</filename> as a subdirectory of <filename>sru</filename>, the project root directory. The following command creates the index in directory <filename>/Users/bpeters/Documents/workspace/sru/index</filename> and adds the given MARC records:</para>
+    <programlisting>
+java -jar marc4j-lucene.jar
+  -index /Users/bpeters/Documents/workspace/sru/index
+  -create <replaceable>input.mrc</replaceable>
+    </programlisting>
+    <para>Running this command from the command-line will output something similar to this:</para>
+    <screen>
+Index has 0 documents
+Added 2 documents in 410 milliseconds
+    </screen>
+    <para>You can also specify the CLASSPATH and main class explicitly using a command of the form:</para>
+    <programlisting>
+java -cp marc4j.jar;lucene-core-2.0.0.jar;marc4j-lucene.jar;
+  commons-logging-1.1.jar org.marc4j.lucene.util.MarcIndexDriver
+  -index /Users/bpeters/Documents/workspace/sru/index -create <replaceable>input.mrc</replaceable>
+    </programlisting>
+    <?hard-pagebreak?>
+    <warning>
+      <para>If you add multiple files to the index use the <command>-create</command> option only for the first file, otherwise <classname>MarcIndexDriver</classname> will overwrite the existing index every time you add a new file.</para>
+    </warning>
+  </sect1>
+  <sect1>
+    <title>Implementing the SRU Operation</title>
+    <para>Now that we have the controller framework and a Lucene index that contains some records, we can start developing the Search/Retrieve operation. We start with developing a simple gateway to wrap the specific Lucene code. <xref linkend="gateway.example"/> implements the logic needed for the Search/Retrieve operation.</para>
+    <example id="gateway.example">
+      <title>The SearchGateway Class</title>
+      <programlisting>
+package org.marc4j.sru;
+
+import java.io.IOException;
+
+import org.apache.log4j.Logger;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.marc4j.lucene.util.QueryHelper;
+
+public class SearchGateway {
+
+    static Logger log = Logger.getLogger(SearchGateway.class);
+
+    // location of the index
+    public static final String INDEX_DIR =
+      "/Users/bpeters/Documents/workspace/sru/index";
+
+    public Hits query(String cql) throws IOException {
+        log.debug("entering query() method");
+
+        Directory dir = FSDirectory.getDirectory(INDEX_DIR, false);
+        IndexSearcher searcher = new IndexSearcher(dir);
+
+        Analyzer analyzer = new StandardAnalyzer();
+        QueryParser parser = new QueryParser("dc:title", analyzer);
+        Query q = null;
+        try {
+            // create Lucene expression from CQL expression
+            String queryString = QueryHelper.toLucene(cql);
+            log.debug("Lucene query expression: " + queryString);
+
+            q = parser.parse(queryString);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+
+        Hits hits = searcher.search(q);
+        log.debug("Hits returned for " + cql + ": " + hits.length());
+
+        return hits;
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>Most of the code in <xref linkend="gateway.example"/> is similar to <xref linkend="searching.example"/> in <xref linkend="ch04"/>. The <classname>IndexSearcher</classname> instance uses the <classname>FSDirectory</classname> object to open the directory containing the index. The <classname>StandardAnalyzer</classname> is used to analyze the search query string to ensure that the query is in the same form as the index. A part that needs some explanation is the following line of code:</para>
+    <programlisting>
+String queryString = QueryHelper.toLucene(cql);
+    </programlisting>
+    <para>The <classname>QueryHelper</classname><indexterm><primary>QueryHelper class</primary></indexterm> class is part of the MARC4J Lucene library. It enables you to translate a CQL<indexterm><primary>CQL</primary></indexterm> query expression to a Lucene query expression, but it only supports a limited set of features required by CQL. In the current release the <classname>QueryHelper</classname> class supports the query expressions listed in <xref linkend="query.examples"/>.</para>
+    <?hard-pagebreak?>
+    <table id="query.examples">
+      <title>Query Examples</title>
+      <tgroup align="left" cols="2">
+	<colspec colwidth="1*"/>
+	<colspec colwidth="1.5*"/>
+	<thead>
+	  <row>
+	    <entry>CQL Query Expression</entry>
+	    <entry>Description</entry>
+	  </row>
+	</thead>
+	<tbody>
+	  <row>
+	    <entry><varname>Summerland</varname></entry>
+	    <entry>Matches records that contain <varname>Summerland</varname> in the default field.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.title = Summerland</varname></entry>
+	    <entry>Matches records that contain the term <varname>Summerland</varname> in the <varname>dc.title</varname> field.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.title = "Kavalier and Clay"</varname></entry>
+	    <entry>Matches records that contain the phrase <varname>"Kavalier and Clay"</varname> in the <varname>dc.title</varname> field.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.author = Chabon and "Kavalier and Clay"</varname></entry>
+	    <entry>Matches records that contain the term <varname>Chabon</varname> in the <varname>dc.creator</varname> field and the phrase <varname>"Kavalier and Clay"</varname> in the default field.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>Summerland or "Kavalier and Clay"</varname></entry>
+	    <entry>Matches records that contain the term <varname>Summerland</varname> or the phrase <varname>"Kavalier and Clay"</varname> in the default field.</entry>
+	  </row>
+	  <row>
+	    <entry><varname>dc.subject = (Fantasy or Magic) not "Comic books, strips, etc."</varname></entry>
+	    <entry>Matches records that contain the term <varname>Fantasy</varname> or <varname>Magic</varname>, but not the phrase <varname>"Comic books, strips, etc."</varname> in the <varname>dc.subject</varname> field.</entry>
+	  </row>
+	</tbody>
+      </tgroup>
+    </table>
+    <para>You can use the wildcards * (match zero or more characters) and ? (match a single character).</para>
+    <para>The <classname>Query</classname> object is created using the Lucene query string returned by the <methodname>toLucene()</methodname> method. The <classname>IndexSearcher</classname> instance uses the <classname>Query</classname> instance and returns a <classname>Hits</classname> object that contains documents that meet the criteria.</para>
+    <note>
+      <para>In a real world application it is not recommended to create a new instance of <classname>IndexSearcher</classname><indexterm><primary>IndexSearcher class</primary></indexterm> every time the <methodname>query()</methodname> method is executed, but for now this will work. It is also recommended to put the location of the index in a property file located on the CLASSPATH environment to avoid having to update the class when the location of the index changes.</para>
+    </note>
+    <para>To test the gateway, we add a JUnit<indexterm><primary>JUnit</primary></indexterm> test class to the project. JUnit is a Java library to run automated tests. It is an essential tool for Java developers and most IDE's enable you to run tests from within the editor. It is not the purpose of this book to provide a tutorial on how to use JUnit. There are quite a few books and online tutorials available that cover this subject. Before we can start writing test classes, we need to add the <classname>junit.jar</classname> to the CLASSPATH. In Eclipse select Project, then Properties from the menu. Then go to the Libraries tab, click Add External JARs... and navigate to the directory where you installed Eclipse. Go to the sub directory <filename>plugins</filename> and then to a sub directory that is called something like <filename>org.junit_3.8.1</filename>. Open this directory, select <classname>junit.jar</classname> and click open to add the library to the CLASSPATH environment variable. <xref linkend="junit.test"/> shows the code for the JUnit test to test the <methodname>query()</methodname> method in the <classname>SearchGateway</classname> class.</para>
+    <example id="junit.test">
+      <title>JUnit Test for Gateway</title>
+      <programlisting>
+package org.marc4j.sru.test;
+
+import junit.framework.TestCase;
+import org.apache.lucene.search.Hits;
+import org.marc4j.sru.SearchGateway;
+
+public class SearchGatewayTest extends TestCase {
+
+    public void testSimpleQuery() throws Exception {
+        SearchGateway gateway = new SearchGateway();
+        Hits hits = gateway.query("Summerland");
+        assertEquals(1, hits.length());
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>The JUnit <classname>TestCase</classname><indexterm><primary>TestCase class</primary></indexterm> class provides test methods like <classname>assertEquals()</classname> to test if a particular condition is true. If this is not the case, the test fails. You can run the test from within your Eclipse environment<indexterm><primary>Eclipse IDE</primary><secondary>running JUnit tests</secondary></indexterm>. Right click on the test class and select Run As... and then JUnit Test. JUnit will run every method in the class that starts with <methodname>test</methodname>. In this case there is only one test method called <methodname>testSimpleQuery()</methodname>. It assumes there is an indexed record with title <emphasis>Summerland</emphasis>.</para>
+    <para>We are now ready to implement the Search/Retrieve operation. It will use the <classname>SearchGateway</classname> class to execute queries. Select the package <classname>org.marc4j.sru</classname> and then select File, New, Class. Add <classname>SearchRetrieveOperation</classname> in the name field and add <classname>Operation</classname> as a superclass. Click finish to create the class. <xref linkend="srop.example"/> shows the code created by Eclipse.</para>
+    <?hard-pagebreak?>
+    <example id="srop.example">
+      <title>The SearchRetrieveOperation Class</title>
+      <programlisting>
+package org.marc4j.sru;
+
+import java.io.IOException;
+import javax.servlet.ServletException;
+
+public class SearchRetrieveOperation extends Operation {
+
+    public void execute() throws ServletException, IOException {
+        // TODO Auto-generated method stub
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>We will start with a first implementation that simply returns the number of records retrieved by the query. <xref linkend="method.example"/> shows the code for this implementation.</para>
+    <example id="method.example">
+      <title>Method Implementation</title>
+      <programlisting>
+<![CDATA[package org.marc4j.sru;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.servlet.ServletException;
+
+import org.apache.lucene.search.Hits;
+
+public class SearchRetrieveOperation extends Operation {
+
+    public void execute() throws ServletException, IOException {
+
+        String queryString = request.getParameter("query");
+
+        SearchGateway gateway = new SearchGateway();
+        Hits hits = gateway.query(queryString);
+
+        response.setContentType("text/xml;charset=utf-8");
+
+        PrintWriter writer = response.getWriter();
+
+        writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        writer.println("<searchRetrieveResponse "
+                + "xmlns=\"http://www.loc.gov/zing/srw/\">\n"
+                + "  <version>1.1</version>\n  <numberOfRecords>"
+                + hits.length() + "</numberOfRecords>\n"
+                + "</searchRetrieveResponse>");
+        writer.flush();
+    }
+
+}]]>
+      </programlisting>
+    </example>
+    <para>The <parameter>query</parameter> parameter is retrieved from the request and used to obtain a <classname>Hits</classname> object using the <classname>SearchGateway</classname>. The browser needs to know that it will receive an XML encoded response. This is done using the <methodname>setContentType</methodname> method. The response is returned via the <classname>PrintWriter</classname> object that is obtained from the <classname>HttpServletResponse</classname>. To test the <classname>SearchRetrieveOperation</classname>, deploy and reload the application using the Ant<indexterm><primary>Apache Ant</primary></indexterm> tasks, open a web browser and enter the following URL:</para>
+    <screen>
+http://localhost:8080/sru/search?operation=SearchRetrieve
+  &amp;query=<replaceable>Summerland</replaceable>
+    </screen>
+    <para>If you enter a title word that matches one or more titles in your Lucene index, the operation should return a response similar to this:</para>
+    <screen>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/">
+  <version>1.1</version>
+  <numberOfRecords>1</numberOfRecords>
+</searchRetrieveResponse>]]>
+    </screen>
+    <para>The next part is adding the actual records from the search result to the response. According to the SRU<indexterm><primary>SRU</primary></indexterm> standard, each record should be embedded in a <emphasis>record</emphasis> element like this:</para>
+    <programlisting>
+<![CDATA[<record>
+  <recordPacking>XML</recordPacking>
+  <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+  <recordData>
+    <!-- the record data -->
+  </recordData>
+  <recordNumber>1</recordNumber>
+</record>]]>
+    </programlisting>
+    <para>The <emphasis>record</emphasis> element provides information about the data format and structure of the embedded record. In this case the record is encoded in XML according to the Dublin Core<indexterm><primary>Dublin Core</primary></indexterm> schema.</para>
+    <para>There are a few things to consider for the Search/Retrieve response. We could simply continue with the current approach and use the <methodname>println()</methodname> method of our response writer to write the whole XML response as a <classname>String</classname>, but then we would end up with unreadable code that is difficult to maintain. A better approach is using one of the XML API's, for example to create a DOM<indexterm><primary>DOM</primary></indexterm> <classname>Document</classname> instance and serialize the document to the response writer. As an alternative, we can also develop an XSLT stylesheet to create the response and use <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary></indexterm> to write the result to the response writer. Another alternative is to implement a new <classname>MarcWriter</classname><indexterm><primary>MarcWriter interface</primary></indexterm> implementation that uses the low-level SAX interface to produce the XML output using SAX<indexterm><primary>SAX</primary></indexterm> events. This approach was used for <xref linkend="dc.writer.example"/>. For a high traffic SRU server this might be the best solution, but for now let's use an  XSLT<indexterm><primary>XSLT</primary></indexterm> stylesheet to create the response.</para>
+    <para>We start with creating a basic stylesheet that transforms MARCXML<indexterm><primary>MARCXML</primary></indexterm> to a limited Dublin Core document with only a <emphasis>creator</emphasis> and <emphasis>title</emphasis> element. Copy the contents of listing <xref linkend="xslt.example"/> in a file called <filename>marcxml2dc.xsl</filename> and add the file to the <classname>org.marc4j.sru</classname> package in a sub directory called <classname>resources</classname>.</para>
+    <example id="xslt.example">
+      <title>The Dublin Core Stylesheet</title>
+      <programlisting>
+<![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet version="1.0"
+		xmlns="http://www.loc.gov/zing/srw"
+		xmlns:marc="http://www.loc.gov/MARC21/slim"
+                xmlns:srw_dc="info:srw/schema/1/dc-schema"
+		xmlns:dc="http://purl.org/dc/elements/1.1/"
+		xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+		exclude-result-prefixes="marc">
+
+  <xsl:output method="xml" indent="yes" encoding="UTF-8"/>
+
+  <xsl:template match="/">
+    <searchRetrieveResponse
+	xmlns="http://www.loc.gov/zing/srw/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <version>1.1</version>
+      <numberOfRecords>
+        <xsl:value-of select="count(//marc:record)"/>
+      </numberOfRecords>
+      <xsl:apply-templates/>
+    </searchRetrieveResponse>
+  </xsl:template>
+
+  <xsl:template match="marc:record">
+    <record>
+      <recordPacking>XML</recordPacking>
+      <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+      <recordData>
+	<srw_dc:dc>
+	  <xsl:call-template name="creator"/>
+	  <xsl:call-template name="title"/>
+	</srw_dc:dc>
+      </recordData>
+      <recordNumber><xsl:number/></recordNumber>
+    </record>
+  </xsl:template>
+
+  <xsl:template name="creator">
+    <dc:creator>
+      <xsl:for-each select="marc:datafield[@tag=100]">
+	<xsl:call-template name="writeSubfields"/>
+      </xsl:for-each>
+    </dc:creator>
+  </xsl:template>
+
+  <xsl:template name="title">
+    <dc:title>
+      <xsl:for-each select="marc:datafield[@tag=245]">
+	<xsl:call-template name="writeSubfields">
+	  <xsl:with-param name="codes">abfghk</xsl:with-param>
+	</xsl:call-template>
+      </xsl:for-each>
+    </dc:title>
+  </xsl:template>
+
+  <xsl:template name="writeSubfields">
+    <xsl:param name="codes">abcdefghijklmnopqrstuvwxyz</xsl:param>
+      <xsl:for-each select="marc:subfield">
+	<xsl:if test="contains($codes, @code)">
+	  <xsl:if test="position() > 1">
+	    <xsl:text> </xsl:text>
+	  </xsl:if>
+	  <xsl:value-of select="text()"/>
+	</xsl:if>
+      </xsl:for-each>
+  </xsl:template>
+
+</xsl:stylesheet>]]>
+      </programlisting>
+    </example>
+    <para>To update the <methodname>execute()</methodname> method, first remove all the code under the line where the response writer gets retrieved using the <methodname>getWriter()</methodname> method call. We start with creating a <classname>Source</classname><indexterm><primary>Source interface</primary></indexterm> object containing the stylesheet:</para>
+    <programlisting>
+String stylesheetPath = "resources/marcxml2dc.xsl";
+InputStream in = getClass().getResourceAsStream(stylesheetPath);
+Source source = new StreamSource(in);
+    </programlisting>
+    <para>The <methodname>getResourceAsStream()</methodname> method is used to locate the file containing the stylesheet relative to the location of the <classname>SearchRetrieveOperation</classname> class. To avoid having to re-parse the stylesheet for every request, it is recommended to create a <classname>Templates</classname> object and cache it in the <classname>ServletContext</classname>, but for now this will work. Next create a <classname>Result</classname><indexterm><primary>Result interface</primary></indexterm> object containing the response writer. The stylesheet output will be written to this writer.</para>
+  <programlisting>
+Result result = new StreamResult(writer);
+  </programlisting>
+  <para>The <classname>Result</classname> and <classname>Source</classname> instances are used to create an instance of <classname>MarcXmlWriter</classname><indexterm><primary>MarcXmlWriter class</primary></indexterm>:</para>
+  <programlisting>
+MarcWriter marcWriter = new MarcXmlWriter(result, source);
+  </programlisting>
+  <para>You can then read records from the search result by iterating over the <classname>Hits</classname><indexterm><primary>Hits class</primary></indexterm> to retrieve the ISO 2709<indexterm><primary>ISO 2709</primary></indexterm> byte stream from the <classname>Document</classname>:</para>
+  <programlisting>
+for (int i = 0; i &lt; hits.length(); i++) {
+    Document doc = hits.doc(i);
+
+    // write each record
+}
+  </programlisting>
+  <para>The MARC4J Lucene API provides a class called <classname>RecordUtils</classname><indexterm><primary>RecordUtils class</primary></indexterm> that is able to unmarshal the byte stream to a <classname>Record</classname><indexterm><primary>Record interface</primary></indexterm> object:</para>
+  <programlisting>
+byte[] bytes = doc.getBinaryValue("record");
+Record record = RecordUtils.unmarshal(bytes);
+  </programlisting>
+  <para>Each record is written to the <classname>MarcWriter</classname><indexterm><primary>MarcWriter interface</primary></indexterm> implementation that writes output to the servlet response:</para>
+  <programlisting>
+marcWriter.write(record);
+  </programlisting>
+<para>Finally you need to close the <classname>MarcWriter</classname> instance and flush the response writer. <xref linkend="updated.example"/> shows the complete code for the updated <methodname>execute()</methodname> method.</para>
+  <example id="updated.example">
+    <title>The Updated Method</title>
+    <programlisting>
+public void execute() throws ServletException, IOException {
+
+    String queryString = request.getParameter("query");
+
+    SearchGateway gateway = new SearchGateway();
+    Hits hits = gateway.query(queryString);
+
+    response.setContentType("text/xml;charset=utf-8");
+
+    PrintWriter writer = response.getWriter();
+
+    String stylesheetPath = "resources/marcxml2dc.xsl";
+    InputStream in = getClass().getResourceAsStream(stylesheetPath);
+    Source source = new StreamSource(in);
+
+    Result result = new StreamResult(writer);
+
+    MarcWriter marcWriter = new MarcXmlWriter(result, source);
+    for (int i = 0; i &lt; hits.length(); i++) {
+        Document doc = hits.doc(i);
+        byte[] bytes = doc.getBinaryValue("record");
+        Record record = RecordUtils.unmarshal(bytes);
+        marcWriter.write(record);
+    }
+    marcWriter.close();
+
+    writer.flush();
+}
+    </programlisting>
+  </example>
+  <para>Deploy and reload the application using the Ant<indexterm><primary>Apache Ant</primary></indexterm> tasks, open a web browser and enter the following URL:</para>
+  <screen>
+http://localhost:8080/sru/search?operation=SearchRetrieve
+  &amp;query=<replaceable>Summerland</replaceable>
+  </screen>
+  <para>If you enter a title word that matches one or more titles in your Lucene<indexterm><primary>Lucene</primary></indexterm> index, the operation should return a response similar to this:</para>
+  <programlisting>
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<searchRetrieveResponse xmlns="http://www.loc.gov/zing/srw/"
+                        xmlns:srw_dc="info:srw/schema/1/dc-schema"
+			xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <version>1.1</version>
+  <numberOfRecords>1</numberOfRecords>
+  <record xmlns="http://www.loc.gov/zing/srw">
+    <recordPacking>XML</recordPacking>
+    <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+    <recordData>
+      <srw_dc:dc>
+        <dc:creator>Chabon, Michael.</dc:creator>
+        <dc:title>Summerland /</dc:title>
+      </srw_dc:dc>
+    </recordData>
+    <recordNumber>1</recordNumber>
+  </record>
+</searchRetrieveResponse>]]>
+  </programlisting>
+  <para>Most browsers automatically encode characters that need to be escaped in a URL, so you should also be able to execute more complex queries like for example:</para>
+  <screen>
+http://localhost:8080/sru/search?operation=SearchRetrieve&amp;query=
+  dc.creator="Chabon, Michael" and "Kavalier and Clay"
+  </screen>
+  <para>You can now add templates to the XSLT<indexterm><primary>XSLT</primary></indexterm> stylesheet to include other Dublin Core fields in the response. To do this, first add templates for each field you want to add, like for example to add the publisher and publication date:</para>
+  <programlisting>
+<![CDATA[  <xsl:template name="publisher">
+    <xsl:for-each select="marc:datafield[@tag=260]">
+      <dc:publisher>
+	<xsl:call-template name="writeSubfields">
+	  <xsl:with-param name="codes">ab</xsl:with-param>
+	</xsl:call-template>
+      </dc:publisher>
+    </xsl:for-each>
+  </xsl:template>
+
+  <xsl:template name="date">
+    <xsl:for-each select="marc:datafield[@tag=260]">
+      <dc:date>
+	<xsl:value-of select="marc:subfield[@code='c']"/>
+      </dc:date>
+    </xsl:for-each>
+  </xsl:template>]]>
+  </programlisting>
+  <?hard-pagebreak?>
+  <para>Then add a call to the new templates in the template that matches the <emphasis>record</emphasis> element:</para>
+  <programlisting>
+<![CDATA[<xsl:call-template name="publisher"/>
+<xsl:call-template name="date"/>]]>
+  </programlisting>
+  <para>The reason we explicitly call each template, is that otherwise we will end up with the remaining data from the source tree in the response. You can test this by replacing the <emphasis>call-template</emphasis> elements with an empty <emphasis>apply-templates</emphasis> element:</para>
+  <programlisting>
+<![CDATA[<xsl:template match="marc:record">
+  <record>
+    <recordPacking>XML</recordPacking>
+    <recordSchema>info:srw/schema/1/dc-v1.1</recordSchema>
+    <recordData>
+      <srw_dc:dc>
+        <xs:apply-templates/>
+      </srw_dc:dc>
+    </recordData>
+   <recordNumber><xsl:number/></recordNumber>
+  </record>
+</xsl:template>]]></programlisting>
+  </sect1>
+  <sect1>
+    <title>Adding the Explain Operation</title>
+    <para>The Explain operation records the facilities that are available on the SRU server. It can be used for configuration purposes by the client and contains such information as the host, port and path and the record schema used by the Search/Retrieve operation. The explain response should be returned when the client simply sends a request to the SRU<indexterm><primary>SRU</primary></indexterm> database, in our case:</para>
+    <screen>
+http://localhost:8080/sru
+    </screen>
+    <para>To do this, create another JSP template containing the explain response and add this template to the <filename>web.xml</filename> file as a welcome file. Add the contents of <xref linkend="explain.example"/> to a file called <filename>explain.jsp</filename> and save the file in the <filename>web</filename> directory.</para>
+    <example id="explain.example">
+      <title>JSP Template for the Explain Response</title>
+      <programlisting>
+<![CDATA[<jsp:root xmlns:jsp="http://java.sun.com/JSP/Page"
+	  version="1.2">
+  <jsp:output omit-xml-declaration="false"/>
+  <jsp:directive.page contentType="text/xml"/>
+  <explainResponse xmlns="http://www.loc.gov/zing/srw/"
+		   xmlns:zr="http://explain.z3950.org/dtd/2.0/">
+    <version>1.1</version>
+    <record>
+      <recordPacking>XML</recordPacking>
+      <recordSchema>http://explain.z3950.org/dtd/2.0/ </recordSchema>
+      <recordData>
+	<zr:explain>
+	  <zr:serverInfo>
+	    <zr:host>localhost</zr:host>
+	    <zr:port>8080</zr:port>
+	    <zr:database>sru/search</zr:database>
+	  </zr:serverInfo>
+	  <zr:databaseInfo>
+	    <zr:title>An example SRU service</zr:title>
+	    <zr:description lang='en' primary='true'>
+	      This is an example SRU service.
+	    </zr:description>
+	  </zr:databaseInfo>
+	  <zr:schemaInfo>
+	    <zr:schema identifier='info:srw/schema/1/dc-v1.1'
+		       sort='false' name='dc'>
+	      <zr:title>Dublin Core</zr:title>
+	    </zr:schema>
+	  </zr:schemaInfo>
+	  <zr:configInfo>
+	    <zr:default type='numberOfRecords'>100</zr:default>
+	  </zr:configInfo>
+	</zr:explain>
+      </recordData>
+    </record>
+  </explainResponse>
+</jsp:root>]]>
+      </programlisting>
+    </example>
+    <para>To add the explain response as a welcome file, open the <filename>web.xml</filename> file and add the following lines under the Servlet mappings:</para>
+    <programlisting>
+<![CDATA[<welcome-file-list>
+  <welcome-file>explain.jsp</welcome-file>
+</welcome-file-list>]]>
+    </programlisting>
+    <para>Deploy and reload the application using the Ant<indexterm><primary>Apache Ant</primary></indexterm> tasks, open a web browser and enter the following URL:</para>
+    <screen>
+http://localhost:8080/sru
+    </screen>
+    <para>You should see the contents of the explain response document.</para>
+    <para>In addition to the application URL, the explain operation should also be the response of an operation URL. For our application this means that the following URL should return the explain response:</para>
+    <screen>
+http://localhost:8080/sru/search?version=1.1&amp;operation=Explain
+    </screen>
+    <para>Thanks to our controller this is not difficult. Adding an operation class called <classname>ExplainOperation</classname> with a forward to the <filename>explain.jsp</filename> should be enough. <xref linkend="explain.jsp.example"/> shows the complete code.</para>
+    <example id="explain.jsp.example">
+      <title>The ExplainOperation Class</title>
+      <programlisting>
+package org.marc4j.sru;
+
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+
+public class ExplainOperation extends Operation {
+
+    public void execute() throws ServletException, IOException {
+        forward("/explain.jsp");
+    }
+
+}
+      </programlisting>
+    </example>
+    <para>Deploy and reload the application using the Ant tasks, open a web browser and enter the following URL:</para>
+    <screen>
+http://localhost:8080/sru/search?version=1.1&amp;operation=Explain
+    </screen>
+    <para>Again you should see the contents of the explain response document.</para>
+    <para>We now have a basic SRU implementation that provides support for the Search/Retrieve operation and is able to report the facilities to the client. The implementation is fully functional, but it does not support all the request parameters specified by the Search/Retrieve operation and CQL support is limited to the use of boolean operators and wild cards. In a production environment an SRU server should also report more detailed diagnostics and the standard specifies a third operation, the Scan operation, to enable clients to browse the index for search terms.</para>
+    <para>Is Java still suitable for web application development? Recently there has been a lot of discussion about Java as a platform for web applications. The Java 2 Enterprise Edition (J2EE), Sun's platform for web applications, has evolved into a complex platform, especially for applications that do not require the enterprise scalability and security that J2EE provides. Open source projects such as Hibernate and the Spring Framework show that you do not need traditional J2EE application models to solve complex real-world problems. The solution presented here is not ready for deployment in a production environment, but it required only 216 lines of code and a few simple Java Server Pages to implement a working SRU server.</para>
+  </sect1>
+</chapter>

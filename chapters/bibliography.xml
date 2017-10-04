@@ -1,0 +1,81 @@
+<bibliography id="bibliography">
+  <title>References</title>
+  <bibliodiv>
+    <title>Publications</title>
+    <bibliomixed>Fowler, Martin. <title>Patterns of Enterprise Application Architecture</title>. Boston: Addison Wesley, 2003.</bibliomixed>
+    <bibliomixed>Friedl, Jeffrey E. F.. <title>Mastering Regular Expressions</title>. Sebastopol: O'Reilly, 2006.</bibliomixed>
+    <bibliomixed>Gospodnetic&#180;, Otis and Hatcher, Eric. <title>Lucene in Action</title>. Manning: Greenwich, 2005</bibliomixed>
+    <bibliomixed>Understanding Metadata. NISO Press 2004. Available from <bibliosource><ulink url="http://www.niso.org">http://www.niso.org</ulink></bibliosource>.</bibliomixed>
+  </bibliodiv>
+  <bibliodiv>
+    <title>Bibliographic Standards</title>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://dublincore.org/">Dublin Core Metadata Initiative</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.loc.gov/standards/marcxml/">MARC 21 XML Schema</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.loc.gov/marc/">MARC Standards</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.loc.gov/standards/mods/">Metadata Object Description Schema (MODS)</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.dlib.vt.edu/projects/OAi/marcxml/marcxml.html">OAI MARC XML</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.editeur.org/onix.html">ONIX for Books</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.loc.gov/standards/sru/">SRU (Search/Retrieve via URL)</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.ifla.org/VI/3/p1996-1/sec-uni.htm">UNIMARC</ulink>
+      </bibliosource>
+    </bibliomixed>
+  </bibliodiv>
+  <bibliodiv>
+    <title>Helpful Internet Pages</title>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://lucene.apache.org">Apache Lucene</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://tomcat.apache.org/">Apache Tomcat</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://eclipse.org">Eclipse IDE</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://www.getopt.org/luke/">Luke - Lucene Index Toolbox</ulink>
+      </bibliosource>
+    </bibliomixed>
+    <bibliomixed>
+      <bibliosource class="uri">
+	<ulink url="http://java.sun.com/">Sun Developer Network</ulink>
+      </bibliosource>
+    </bibliomixed>
+  </bibliodiv>
+</bibliography>
