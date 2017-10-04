@@ -32,7 +32,7 @@
 	<xsl:param name="page.margin.bottom">0.50in</xsl:param>
 	<xsl:param name="body.margin.bottom">0.40in</xsl:param>
 	<xsl:param name="double.sided">1</xsl:param>
-	
+
 	<xsl:param name="hyphenate">false</xsl:param>
 
 	<xsl:attribute-set name="root.properties">
