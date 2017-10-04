@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book
 [
-<!ENTITY ch00      SYSTEM "chapters/ch00.xml">
-<!ENTITY ch01      SYSTEM "chapters/ch01.xml">
-<!ENTITY ch02      SYSTEM "chapters/ch02.xml">
-<!ENTITY ch03      SYSTEM "chapters/ch03.xml">
-<!ENTITY ch04      SYSTEM "chapters/ch04.xml">
-<!ENTITY ch05      SYSTEM "chapters/ch05.xml">
-<!ENTITY appendixa SYSTEM "chapters/appendixa.xml">
-<!ENTITY appendixb SYSTEM "chapters/appendixb.xml">
-<!ENTITY biblio    SYSTEM "chapters/bibliography.xml">
+<!ENTITY ch00      SYSTEM "ch00.xml">
+<!ENTITY ch01      SYSTEM "ch01.xml">
+<!ENTITY ch02      SYSTEM "ch02.xml">
+<!ENTITY ch03      SYSTEM "ch03.xml">
+<!ENTITY ch04      SYSTEM "ch04.xml">
+<!ENTITY ch05      SYSTEM "ch05.xml">
+<!ENTITY appendixa SYSTEM "appendixa.xml">
+<!ENTITY appendixb SYSTEM "appendixb.xml">
+<!ENTITY biblio    SYSTEM "bibliography.xml">
 ]>
 
 <book id="marc4j">

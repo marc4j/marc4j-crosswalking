@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-SOURCE="book.xml"
+SOURCE="src/book.xml"
 CONFIG="cfg.xml"
-XSL="fo-stylesheet.xsl"
+XSL="style/fo-stylesheet.xsl"
 FO="build/crosswalking.fo"
 PDF="build/crosswalking.pdf"
 
