@@ -1,8 +1,8 @@
 # marc4j-book
 
-This project contains the original sources for *Crosswalking: Processing MARC in XML Environments with MARC4J*. The sources are published under the Creative Commons license.
+This project contains the original sources for *Crosswalking: Processing MARC in XML Environments with MARC4J*. You can find a copy [here](https://github.com/marc4j/marc4j/files/1348398/Crosswalking.pdf).
 
-The book is written using DocBook Light. Output can be generated using the DocBook XSL stylesheets.
+The book is written in [DocBook](http://docbook.org/). Output can be generated using the [DocBook XSL](http://docbook.sourceforge.net/) stylesheets.
 
 ### HTML outpout
 
@@ -12,7 +12,7 @@ To create a single HTML output document using `xsltproc`:
 xsltproc --output build/crosswalking.html ~/docbook-xsl-1.79.1/html/docbook.xsl book.xml
 ```
 
-Where `~/docbook-xsl-1.79.1/html/docbook.xsl` should refer to the DocBook XSL stylesheet for HTML output.
+Where `~/docbook-xsl-1.79.1/html/docbook.xsl` should refer to the [DocBook XSL](http://docbook.sourceforge.net/) stylesheet for HTML output.
 
 ### PDF output
 
@@ -22,9 +22,9 @@ To create a PDF document using `fop` you can run the provided script:
 ./run-fop.sh
 ```
 
-### PDF font configuration
+#### PDF font configuration
 
-The font configuration is in `cfg.xml`:
+The PDF output font configuration is in `cfg.xml`:
 
 ```
 <configuration>
@@ -41,7 +41,7 @@ The font configuration is in `cfg.xml`:
 </configuration>
 ```
 
-### Stylesheet reference
+#### Stylesheet reference
 
 The `fo-stylesheet.xsl` contains a reference to the DocBook XSL files:
 
