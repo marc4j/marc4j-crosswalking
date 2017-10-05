@@ -48,3 +48,7 @@ The `fo-stylesheet.xsl` contains a reference to the DocBook XSL files:
 ```
 <xsl:import href="/Users/bas/docbook-xsl-1.79.1/fo/docbook.xsl"/>
 ```
+
+## License
+
+See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).
