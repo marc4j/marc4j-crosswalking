@@ -1,4 +1,4 @@
-# marc4j-book
+# marc4j-crosswalking
 
 This project contains the original sources for *Crosswalking: Processing MARC in XML Environments with MARC4J*. You can find a copy [here](https://github.com/marc4j/marc4j/files/1348398/Crosswalking.pdf).
 
