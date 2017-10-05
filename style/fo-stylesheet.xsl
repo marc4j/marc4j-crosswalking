@@ -14,7 +14,7 @@
 	<xsl:param name="title.font.family">Palatino</xsl:param>
 	<xsl:param name="monospace.font.family">Courier</xsl:param>
 
-	<xsl:param name="fop.extensions" select="1" />
+	<xsl:param name="fop1.extensions" select="1" />
 	<xsl:param name="variablelist.as.blocks" select="1" />
 
 	<xsl:param name="header.rule">0</xsl:param>
