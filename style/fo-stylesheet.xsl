@@ -49,6 +49,7 @@
 			<xsl:text>pt</xsl:text>
 		</xsl:attribute>
 		<xsl:attribute name="background-color">#ebebeb</xsl:attribute>
+		<xsl:attribute name="padding">3pt</xsl:attribute>
 	</xsl:attribute-set>
 
 	<xsl:template match="processing-instruction('hard-pagebreak')">
